@@ -5,7 +5,7 @@ var A: u8 = undefined;
 var X: u8 = undefined;
 var Y: u8 = undefined;
 
-var SP: u16 = undefined; // stack pointer
+var SP: u8 = undefined; // stack pointer
 
 var RAM: [0x800]u8 = undefined;
 var ROM: [0x8000]u8 = undefined;
@@ -70,13 +70,13 @@ fn write(address: u16, value: u8) !void {
 }
 
 fn push(value: u8) void {
-    try write(@as(u16, (0x100 + SP)), value);
+    try write(@as(u16, (@as(u16, 0x100) + SP)), value);
     SP -%= 1;
 }
 
 fn pull() u8 {
     SP +%= 1;
-    return read(@as(u16, (0x100 + SP)));
+    return read(@as(u16, (@as(u16, 0x100) + SP)));
 }
 
 fn reset(io: std.Io, path: []const u8) !void {
