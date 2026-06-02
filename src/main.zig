@@ -21,6 +21,14 @@ pub fn main(init: std.process.Init) !void {
 
     try reset(io, rom_path);
 
+    std.debug.print("PC: {x}\n", .{PC});
+    std.debug.print("A: {x}\n", .{A});
+    std.debug.print("X: {x}\n", .{X});
+    std.debug.print("Y: {x}\n", .{Y});
+
+    std.debug.print("{x} {x} {x}\n", .{RAM[0], RAM[1], RAM[2]});
+    std.debug.print("{x}\n", .{RAM[0x0550]});
+
     _ = gpa;
 }
 
@@ -54,6 +62,63 @@ fn emulate() !void {
             A = read(PC);
             PC += 1;
             cycles = 2;
+        },
+        0xA5 => {   // LDA Zero Page
+            const address = read(PC);
+            PC += 1;
+            A = read(address);
+            cycles = 3;
+        },
+        0xAD => {   // LDA Absolute
+            const addr_low = read(PC);
+            PC += 1;
+            const addr_high: u16 = read(PC);
+            PC += 1;
+            const address = (addr_high << 8) | addr_low;
+            A = read(address);
+            cycles = 4;
+        },
+        0x85 => {   // STA Zero Page
+            const address = read(PC);
+            PC += 1;
+            try write(address, A);
+            cycles = 3;
+        },
+        0x86 => {   // STX Zero Page
+            const address = read(PC);
+            PC += 1;
+            try write(address, X);
+            cycles = 3;
+        },
+        0x84 => {   // STY Zero Page
+            const address = read(PC);
+            PC += 1;
+            try write(address, Y);
+            cycles = 3;
+        },
+        0x8D => {   // STA Absolute
+            const addr_low = read(PC);
+            PC += 1;
+            const addr_high: u16 = read(PC);
+            PC += 1;
+            try write((addr_high << 8) | addr_low, A);
+            cycles = 4;
+        },
+        0x8E => {   // STX Absolute
+            const addr_low = read(PC);
+            PC += 1;
+            const addr_high: u16 = read(PC);
+            PC += 1;
+            try write((addr_high << 8) | addr_low, X);
+            cycles = 4;
+        },
+        0x8C => {   // STY Absolute
+            const addr_low = read(PC);
+            PC += 1;
+            const addr_high: u16 = read(PC);
+            PC += 1;
+            try write((addr_high << 8) | addr_low, Y);
+            cycles = 4;
         },
         else => {},
     }
