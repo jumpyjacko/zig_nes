@@ -350,6 +350,22 @@ fn emulate() !void {
             flag_negative = A > 0x7F;
             cycles = 4;
         },
+        0x20 => { // JSR
+            const sr_addr_l = read(PC);
+            PC += 1;
+            const sr_addr_h: u16 = read(PC);
+            push(@truncate(PC >> 8));
+            push(@truncate(PC & 0x00FF));
+            PC = (sr_addr_h << 8) | sr_addr_l;
+            cycles = 6;
+        },
+        0x60 => { // RTS
+            const rt_addr_l = pull();
+            const rt_addr_h: u16 = pull();
+            PC = (rt_addr_h << 8) | rt_addr_l;
+            PC += 1;
+            cycles = 6;
+        },
         else => {},
     }
 }
