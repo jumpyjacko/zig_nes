@@ -69,12 +69,12 @@ fn write(address: u16, value: u8) !void {
     }
 }
 
-fn push(value: u8) !void {
+fn push(value: u8) void {
     try write(@as(u16, (0x100 + SP)), value);
     SP -%= 1;
 }
 
-fn pull() !u8 {
+fn pull() u8 {
     SP +%= 1;
     return read(@as(u16, (0x100 + SP)));
 }
@@ -341,11 +341,11 @@ fn emulate() !void {
             }
         },
         0x48 => { // PHA
-            try push(A);
+            push(A);
             cycles = 3;
         },
         0x68 => { // PLA
-            A = try pull();
+            A = pull();
             flag_zero = A == 0;
             flag_negative = A > 0x7F;
             cycles = 4;
