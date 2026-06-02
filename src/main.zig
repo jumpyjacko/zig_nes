@@ -46,6 +46,48 @@ pub fn main(init: std.process.Init) !void {
     _ = gpa;
 }
 
+fn read(address: u16) u8 {
+    if (address <= 0x1FFF) {
+        return RAM[address & 0b0000_0111_1111_1111];
+    }
+
+    if (address >= 0x8000) {
+        return ROM[address - 0x8000];
+    }
+
+    return 0; // i don't know what to do here
+}
+
+fn write(address: u16, value: u8) !void {
+    if (address >= 0x8000) return;
+
+    if (address <= 0x1FFF) {
+        RAM[address & 0b0000_0111_1111_1111] = value;
+        return;
+    }
+}
+
+fn reset(io: std.Io, path: []const u8) !void {
+    var file = try std.Io.Dir.cwd().openFile(io, path, .{
+        .mode = .read_only,
+    });
+    defer file.close(io);
+
+    var buf: [4096]u8 = undefined;
+    var reader = file.reader(io, &buf);
+
+    try reader.interface.readSliceAll(&HEADER);
+    try reader.interface.readSliceAll(&ROM);
+
+    const PC_low = read(0xFFFC);
+    const PC_high = read(0xFFFD);
+
+    PC = (@as(u16, PC_high) * 0x100) + @as(u16, PC_low);
+
+    flag_interupt_disable = true;
+    try run();
+}
+
 var CPU_Halted = false;
 fn run() !void {
     while (!CPU_Halted) {
@@ -287,46 +329,4 @@ fn emulate() !void {
         },
         else => {},
     }
-}
-
-fn read(address: u16) u8 {
-    if (address <= 0x1FFF) {
-        return RAM[address & 0b0000_0111_1111_1111];
-    }
-
-    if (address >= 0x8000) {
-        return ROM[address - 0x8000];
-    }
-
-    return 0; // i don't know what to do here
-}
-
-fn write(address: u16, value: u8) !void {
-    if (address >= 0x8000) return;
-
-    if (address <= 0x1FFF) {
-        RAM[address & 0b0000_0111_1111_1111] = value;
-        return;
-    }
-}
-
-fn reset(io: std.Io, path: []const u8) !void {
-    var file = try std.Io.Dir.cwd().openFile(io, path, .{
-        .mode = .read_only,
-    });
-    defer file.close(io);
-
-    var buf: [4096]u8 = undefined;
-    var reader = file.reader(io, &buf);
-
-    try reader.interface.readSliceAll(&HEADER);
-    try reader.interface.readSliceAll(&ROM);
-
-    const PC_low = read(0xFFFC);
-    const PC_high = read(0xFFFD);
-
-    PC = (@as(u16, PC_high) * 0x100) + @as(u16, PC_low);
-
-    flag_interupt_disable = true;
-    try run();
 }
