@@ -366,6 +366,131 @@ fn emulate() !void {
             PC += 1;
             cycles = 6;
         },
+        0x4C => { // JMP
+            const addr_l = read(PC);
+            PC += 1;
+            const addr_h: u16 = read(PC);
+            PC += 1;
+            PC = (addr_h << 8) | addr_l;
+            cycles = 3;
+        },
+        0xE8 => { // INX
+            X +%= 1;
+            PC += 1;
+
+            flag_zero = X == 0;
+            flag_negative = X > 0x7F;
+            cycles = 2;
+        },
+        0xCA => { // DEX
+            X -%= 1;
+            PC += 1;
+
+            flag_zero = X == 0;
+            flag_negative = X > 0x7F;
+            cycles = 2;
+        },
+        0xC8 => { // INY
+            Y +%= 1;
+            PC += 1;
+
+            flag_zero = Y == 0;
+            flag_negative = Y > 0x7F;
+            cycles = 2;
+        },
+        0x88 => { // DEY
+            Y -%= 1;
+            PC += 1;
+
+            flag_zero = Y == 0;
+            flag_negative = Y > 0x7F;
+            cycles = 2;
+        },
+        0xAA => { // TAX
+            X = A;
+            PC += 1;
+
+            flag_zero = X == 0;
+            flag_negative = X > 0x7F;
+            cycles = 2;
+        },
+        0x8A => { // TXA
+            A = X;
+            PC += 1;
+
+            flag_zero = A == 0;
+            flag_negative = A > 0x7F;
+            cycles = 2;
+        },
+        0xA8 => { // TAY
+            Y = A;
+            PC += 1;
+
+            flag_zero = Y == 0;
+            flag_negative = Y > 0x7F;
+            cycles = 2;
+        },
+        0x98 => { // TYA
+            A = Y;
+            PC += 1;
+
+            flag_zero = A == 0;
+            flag_negative = A > 0x7F;
+            cycles = 2;
+        },
+        0x9A => { // TXS
+            SP = X;
+            PC += 1;
+
+            cycles = 2;
+        },
+        0xBA => { // TXS
+            X = SP;
+            PC += 1;
+
+            flag_zero = X == 0;
+            flag_negative = X > 0x7F;
+            cycles = 2;
+        },
+        0x38 => { // SEC
+            flag_carry = true;
+            PC += 1;
+            cycles = 2;
+        },
+        0x18 => { // CLC
+            flag_carry = false;
+            PC += 1;
+            cycles = 2;
+        },
+        0xB8 => { // CLV
+            flag_overflow = false;
+            PC += 1;
+            cycles = 2;
+        },
+        0x78 => { // SEI
+            flag_interupt_disable = true;
+            PC += 1;
+            cycles = 2;
+        },
+        0x58 => { // CLI
+            flag_interupt_disable = false;
+            PC += 1;
+            cycles = 2;
+        },
+        0xF8 => { // SED
+            flag_decimal = true;
+            PC += 1;
+            cycles = 2;
+        },
+        0xD8 => { // CLD
+            flag_decimal = false;
+            PC += 1;
+            cycles = 2;
+        },
+        0xEA => { // NOP
+            PC += 1;
+            cycles = 2;
+        },
         else => {},
     }
 }
