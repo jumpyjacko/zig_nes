@@ -21,9 +21,42 @@ pub fn main(init: std.process.Init) !void {
 
     try reset(io, rom_path);
 
-    std.debug.print("Program counter: {x}\n", .{PC});
-
     _ = gpa;
+}
+
+var CPU_Halted = false;
+fn run() !void {
+    while (!CPU_Halted) {
+        try emulate();
+    }
+}
+
+var cycles: usize = 0;
+fn emulate() !void {
+    const opcode: u8 = read(PC);
+    PC += 1;
+
+    switch (opcode) {
+        0x02 => {   // HLT
+            CPU_Halted = true;
+        },
+        0xA0 => {   // LDY Immediate
+            Y = read(PC);
+            PC += 1;
+            cycles = 2;
+        },
+        0xA2 => {   // LDX Immediate
+            X = read(PC);
+            PC += 1;
+            cycles = 2;
+        },
+        0xA9 => {   // LDA Immediate
+            A = read(PC);
+            PC += 1;
+            cycles = 2;
+        },
+        else => {},
+    }
 }
 
 fn read(address: u16) u8 {
@@ -54,4 +87,6 @@ fn reset(io: std.Io, path: []const u8) !void {
     const PC_high = read(0xFFFD);
 
     PC = (@as(u16, PC_high) * 0x100) + @as(u16, PC_low);
+
+    try run();
 }
