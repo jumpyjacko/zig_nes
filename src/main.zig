@@ -71,6 +71,15 @@ fn read(address: u16) u8 {
     return 0; // i don't know what to do here
 }
 
+fn write(address: u16, value: u8) !void {
+    if (address >= 0x8000) return;
+
+    if (address <= 0x1FFF) {
+        RAM[address & 0b0000_0111_1111_1111] = value;
+        return;
+    }
+}
+
 fn reset(io: std.Io, path: []const u8) !void {
     var file = try std.Io.Dir.cwd().openFile(io, path, .{
         .mode = .read_only,
