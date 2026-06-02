@@ -58,22 +58,34 @@ fn emulate() !void {
         0xA0 => { // LDY Immediate
             Y = read(PC);
             PC += 1;
+
+            flag_zero = Y == 0;
+            flag_negative = Y > 127;
             cycles = 2;
         },
         0xA2 => { // LDX Immediate
             X = read(PC);
             PC += 1;
+
+            flag_zero = X == 0;
+            flag_negative = X > 127;
             cycles = 2;
         },
         0xA9 => { // LDA Immediate
             A = read(PC);
             PC += 1;
+
+            flag_zero = A == 0;
+            flag_negative = A > 127;
             cycles = 2;
         },
         0xA5 => { // LDA Zero Page
             const address = read(PC);
             PC += 1;
             A = read(address);
+            
+            flag_zero = A == 0;
+            flag_negative = A > 127;
             cycles = 3;
         },
         0xAD => { // LDA Absolute
@@ -83,6 +95,9 @@ fn emulate() !void {
             PC += 1;
             const address = (addr_high << 8) | addr_low;
             A = read(address);
+
+            flag_zero = A == 0;
+            flag_negative = A > 127;
             cycles = 4;
         },
         0x85 => { // STA Zero Page
