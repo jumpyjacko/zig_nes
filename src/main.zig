@@ -33,7 +33,7 @@ pub fn main(init: std.process.Init) !void {
     std.debug.print("X: {x}\n", .{X});
     std.debug.print("Y: {x}\n", .{Y});
 
-    std.debug.print("{x} {x} {x}\n", .{RAM[0], RAM[1], RAM[2]});
+    std.debug.print("{x} {x} {x}\n", .{ RAM[0], RAM[1], RAM[2] });
     std.debug.print("{x}\n", .{RAM[0x0550]});
 
     _ = gpa;
@@ -52,31 +52,31 @@ fn emulate() !void {
     PC += 1;
 
     switch (opcode) {
-        0x02 => {   // HLT
+        0x02 => { // HLT
             CPU_Halted = true;
         },
-        0xA0 => {   // LDY Immediate
+        0xA0 => { // LDY Immediate
             Y = read(PC);
             PC += 1;
             cycles = 2;
         },
-        0xA2 => {   // LDX Immediate
+        0xA2 => { // LDX Immediate
             X = read(PC);
             PC += 1;
             cycles = 2;
         },
-        0xA9 => {   // LDA Immediate
+        0xA9 => { // LDA Immediate
             A = read(PC);
             PC += 1;
             cycles = 2;
         },
-        0xA5 => {   // LDA Zero Page
+        0xA5 => { // LDA Zero Page
             const address = read(PC);
             PC += 1;
             A = read(address);
             cycles = 3;
         },
-        0xAD => {   // LDA Absolute
+        0xAD => { // LDA Absolute
             const addr_low = read(PC);
             PC += 1;
             const addr_high: u16 = read(PC);
@@ -85,25 +85,25 @@ fn emulate() !void {
             A = read(address);
             cycles = 4;
         },
-        0x85 => {   // STA Zero Page
+        0x85 => { // STA Zero Page
             const address = read(PC);
             PC += 1;
             try write(address, A);
             cycles = 3;
         },
-        0x86 => {   // STX Zero Page
+        0x86 => { // STX Zero Page
             const address = read(PC);
             PC += 1;
             try write(address, X);
             cycles = 3;
         },
-        0x84 => {   // STY Zero Page
+        0x84 => { // STY Zero Page
             const address = read(PC);
             PC += 1;
             try write(address, Y);
             cycles = 3;
         },
-        0x8D => {   // STA Absolute
+        0x8D => { // STA Absolute
             const addr_low = read(PC);
             PC += 1;
             const addr_high: u16 = read(PC);
@@ -111,7 +111,7 @@ fn emulate() !void {
             try write((addr_high << 8) | addr_low, A);
             cycles = 4;
         },
-        0x8E => {   // STX Absolute
+        0x8E => { // STX Absolute
             const addr_low = read(PC);
             PC += 1;
             const addr_high: u16 = read(PC);
@@ -119,7 +119,7 @@ fn emulate() !void {
             try write((addr_high << 8) | addr_low, X);
             cycles = 4;
         },
-        0x8C => {   // STY Absolute
+        0x8C => { // STY Absolute
             const addr_low = read(PC);
             PC += 1;
             const addr_high: u16 = read(PC);
@@ -137,7 +137,7 @@ fn read(address: u16) u8 {
     }
 
     if (address >= 0x8000) {
-        return ROM[address-0x8000];
+        return ROM[address - 0x8000];
     }
 
     return 0; // i don't know what to do here
@@ -160,7 +160,7 @@ fn reset(io: std.Io, path: []const u8) !void {
 
     var buf: [4096]u8 = undefined;
     var reader = file.reader(io, &buf);
-    
+
     try reader.interface.readSliceAll(&HEADER);
     try reader.interface.readSliceAll(&ROM);
 
