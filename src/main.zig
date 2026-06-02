@@ -350,6 +350,33 @@ fn emulate() !void {
             flag_negative = A > 0x7F;
             cycles = 4;
         },
+        0x08 => { // PHP
+            var status: u8 = 0;
+
+            if (flag_carry) status |= 0b0000_0001;
+            if (flag_zero) status |= 0b0000_0010;
+            if (flag_interupt_disable) status |= 0b0000_0100;
+            if (flag_decimal) status |= 0b0000_1000;
+            status |= 0b0011_0000; // always set in PHP instruction
+            if (flag_overflow) status |= 0b0100_0000;
+            if (flag_negative) status |= 0b1000_0000;
+
+            push(status);
+            PC += 1;
+            cycles = 3;
+        },
+        0x28 => { // PLP
+            const status = pull();
+            flag_carry = (status & 0b0000_0001) != 0;
+            flag_zero = (status & 0b0000_0001) != 0;
+            flag_interupt_disable = (status & 0b0000_0001) != 0;
+            flag_decimal = (status & 0b0000_0001) != 0;
+            flag_overflow = (status & 0b0000_0001) != 0;
+            flag_negative = (status & 0b0000_0001) != 0;
+
+            PC += 1;
+            cycles = 4;
+        },
         0x20 => { // JSR
             const sr_addr_l = read(PC);
             PC += 1;
