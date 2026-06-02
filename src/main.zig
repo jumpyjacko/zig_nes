@@ -10,6 +10,13 @@ var ROM: [0x8000]u8 = undefined;
 
 var HEADER: [16]u8 = undefined;
 
+var flag_carry: bool = false;
+var flag_zero: bool = false;
+var flag_interupt_disable: bool = false;
+var flag_decimal: bool = false;
+var flag_overflow: bool = false;
+var flag_negative: bool = false;
+
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
     const io = init.io;
@@ -162,5 +169,6 @@ fn reset(io: std.Io, path: []const u8) !void {
 
     PC = (@as(u16, PC_high) * 0x100) + @as(u16, PC_low);
 
+    flag_interupt_disable = true;
     try run();
 }
