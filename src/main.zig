@@ -5,6 +5,8 @@ var A: u8 = undefined;
 var X: u8 = undefined;
 var Y: u8 = undefined;
 
+var SP: u16 = undefined; // stack pointer
+
 var RAM: [0x800]u8 = undefined;
 var ROM: [0x8000]u8 = undefined;
 
@@ -67,6 +69,16 @@ fn write(address: u16, value: u8) !void {
     }
 }
 
+fn push(value: u8) !void {
+    try write(@as(u16, (0x100 + SP)), value);
+    SP -%= 1;
+}
+
+fn pull() !u8 {
+    SP +%= 1;
+    return read(@as(u16, (0x100 + SP)));
+}
+
 fn reset(io: std.Io, path: []const u8) !void {
     var file = try std.Io.Dir.cwd().openFile(io, path, .{
         .mode = .read_only,
@@ -85,6 +97,7 @@ fn reset(io: std.Io, path: []const u8) !void {
     PC = (@as(u16, PC_high) * 0x100) + @as(u16, PC_low);
 
     flag_interupt_disable = true;
+    SP = 0xFD;
     try run();
 }
 
@@ -109,7 +122,7 @@ fn emulate() !void {
             PC += 1;
 
             flag_zero = Y == 0;
-            flag_negative = Y > 127;
+            flag_negative = Y > 0x7F;
             cycles = 2;
         },
         0xA2 => { // LDX Immediate
@@ -117,7 +130,7 @@ fn emulate() !void {
             PC += 1;
 
             flag_zero = X == 0;
-            flag_negative = X > 127;
+            flag_negative = X > 0x7F;
             cycles = 2;
         },
         0xA9 => { // LDA Immediate
@@ -125,7 +138,7 @@ fn emulate() !void {
             PC += 1;
 
             flag_zero = A == 0;
-            flag_negative = A > 127;
+            flag_negative = A > 0x7F;
             cycles = 2;
         },
         0xA5 => { // LDA Zero Page
@@ -134,7 +147,7 @@ fn emulate() !void {
             A = read(address);
 
             flag_zero = A == 0;
-            flag_negative = A > 127;
+            flag_negative = A > 0x7F;
             cycles = 3;
         },
         0xAD => { // LDA Absolute
@@ -146,7 +159,7 @@ fn emulate() !void {
             A = read(address);
 
             flag_zero = A == 0;
-            flag_negative = A > 127;
+            flag_negative = A > 0x7F;
             cycles = 4;
         },
         0x85 => { // STA Zero Page
@@ -326,6 +339,16 @@ fn emulate() !void {
             } else {
                 cycles = 2;
             }
+        },
+        0x48 => { // PHA
+            try push(A);
+            cycles = 3;
+        },
+        0x68 => { // PLA
+            A = try pull();
+            flag_zero = A == 0;
+            flag_negative = A > 0x7F;
+            cycles = 4;
         },
         else => {},
     }
