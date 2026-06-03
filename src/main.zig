@@ -518,6 +518,48 @@ fn emulate() !void {
             PC += 1;
             cycles = 2;
         },
+        0x0A => { // ASL A
+            flag_carry = (A & 0b1000_0000) != 0;
+            A <<= 1;
+            PC += 1;
+            flag_zero = A == 0;
+            flag_negative = A > 127;
+            cycles = 2;
+        },
+        0x06 => { // ASL Zero Page
+            const address = read(PC);
+            PC += 1;
+            var temp = read(address);
+            flag_carry = (temp & 0b1000_0000) != 0;
+            temp <<= 1;
+
+            flag_zero = temp == 0;
+            flag_negative = temp > 127;
+            try write(address, temp);
+            cycles = 6;
+        },
+        0x0E => { // ASL Absolute
+            const address = readOperands_AbsAddressed();
+            var temp: u8 = read(address);
+
+            flag_carry = (temp & 0b1000_0000) != 0;
+            temp <<= 1;
+            
+            flag_zero = temp == 0;
+            flag_negative = temp > 127;
+            try write(address, temp);
+            cycles = 6;
+        },
         else => {},
     }
+}
+
+fn readOperands_AbsAddressed() u16 {
+    const low = read(PC);
+    PC += 1;
+
+    const high: u16 = read(PC);
+    PC += 1;
+
+    return (high << 8) | low;
 }
