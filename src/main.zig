@@ -539,3 +539,17 @@ fn setFlags_ZN(byte: u8) void {
     flag_zero = byte == 0;
     flag_negative = (byte & 0b1000_0000) != 0;
 }
+
+
+test "flag_ZN" {
+    const expect = @import("std").testing.expect;
+
+    setFlags_ZN(0);
+    try expect(flag_zero);
+
+    setFlags_ZN(@bitCast(@as(i8, -1)));
+    try expect(flag_negative);
+
+    setFlags_ZN(1);
+    try expect(!flag_zero and !flag_negative);
+}
