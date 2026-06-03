@@ -151,11 +151,7 @@ fn emulate() !void {
             cycles = 3;
         },
         0xAD => { // LDA Absolute
-            const addr_low = read(PC);
-            PC += 1;
-            const addr_high: u16 = read(PC);
-            PC += 1;
-            const address = (addr_high << 8) | addr_low;
+            const address = readOperands_AbsAddressed();
             A = read(address);
 
             flag_zero = A == 0;
@@ -181,27 +177,18 @@ fn emulate() !void {
             cycles = 3;
         },
         0x8D => { // STA Absolute
-            const addr_low = read(PC);
-            PC += 1;
-            const addr_high: u16 = read(PC);
-            PC += 1;
-            try write((addr_high << 8) | addr_low, A);
+            const address = readOperands_AbsAddressed();
+            try write(address, A);
             cycles = 4;
         },
         0x8E => { // STX Absolute
-            const addr_low = read(PC);
-            PC += 1;
-            const addr_high: u16 = read(PC);
-            PC += 1;
-            try write((addr_high << 8) | addr_low, X);
+            const address = readOperands_AbsAddressed();
+            try write(address, X);
             cycles = 4;
         },
         0x8C => { // STY Absolute
-            const addr_low = read(PC);
-            PC += 1;
-            const addr_high: u16 = read(PC);
-            PC += 1;
-            try write((addr_high << 8) | addr_low, Y);
+            const address = readOperands_AbsAddressed();
+            try write(address, Y);
             cycles = 4;
         },
         0x10 => { // BPL
