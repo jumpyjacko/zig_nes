@@ -121,24 +121,21 @@ fn emulate() !void {
             Y = read(PC);
             PC += 1;
 
-            flag_zero = Y == 0;
-            flag_negative = Y > 0x7F;
+            setFlags_ZN(Y);
             cycles = 2;
         },
         0xA2 => { // LDX Immediate
             X = read(PC);
             PC += 1;
 
-            flag_zero = X == 0;
-            flag_negative = X > 0x7F;
+            setFlags_ZN(X);
             cycles = 2;
         },
         0xA9 => { // LDA Immediate
             A = read(PC);
             PC += 1;
 
-            flag_zero = A == 0;
-            flag_negative = A > 0x7F;
+            setFlags_ZN(A);
             cycles = 2;
         },
         0xA5 => { // LDA Zero Page
@@ -146,16 +143,14 @@ fn emulate() !void {
             PC += 1;
             A = read(address);
 
-            flag_zero = A == 0;
-            flag_negative = A > 0x7F;
+            setFlags_ZN(A);
             cycles = 3;
         },
         0xAD => { // LDA Absolute
             const address = readOperands_AbsAddressed();
             A = read(address);
 
-            flag_zero = A == 0;
-            flag_negative = A > 0x7F;
+            setFlags_ZN(A);
             cycles = 4;
         },
         0x85 => { // STA Zero Page
@@ -333,8 +328,7 @@ fn emulate() !void {
         },
         0x68 => { // PLA
             A = pull();
-            flag_zero = A == 0;
-            flag_negative = A > 0x7F;
+            setFlags_ZN(A);
             cycles = 4;
         },
         0x08 => { // PHP
@@ -392,64 +386,56 @@ fn emulate() !void {
             X +%= 1;
             PC += 1;
 
-            flag_zero = X == 0;
-            flag_negative = X > 0x7F;
+            setFlags_ZN(X);
             cycles = 2;
         },
         0xCA => { // DEX
             X -%= 1;
             PC += 1;
 
-            flag_zero = X == 0;
-            flag_negative = X > 0x7F;
+            setFlags_ZN(X);
             cycles = 2;
         },
         0xC8 => { // INY
             Y +%= 1;
             PC += 1;
 
-            flag_zero = Y == 0;
-            flag_negative = Y > 0x7F;
+            setFlags_ZN(Y);
             cycles = 2;
         },
         0x88 => { // DEY
             Y -%= 1;
             PC += 1;
 
-            flag_zero = Y == 0;
-            flag_negative = Y > 0x7F;
+            setFlags_ZN(Y);
             cycles = 2;
         },
         0xAA => { // TAX
             X = A;
             PC += 1;
 
-            flag_zero = X == 0;
-            flag_negative = X > 0x7F;
+            setFlags_ZN(X);
             cycles = 2;
         },
         0x8A => { // TXA
             A = X;
             PC += 1;
 
-            flag_zero = A == 0;
-            flag_negative = A > 0x7F;
+            setFlags_ZN(A);
             cycles = 2;
         },
         0xA8 => { // TAY
             Y = A;
             PC += 1;
 
-            flag_zero = Y == 0;
-            flag_negative = Y > 0x7F;
+            setFlags_ZN(Y);
             cycles = 2;
         },
         0x98 => { // TYA
             A = Y;
             PC += 1;
 
-            flag_zero = A == 0;
-            flag_negative = A > 0x7F;
+            setFlags_ZN(A);
             cycles = 2;
         },
         0x9A => { // TXS
@@ -509,8 +495,8 @@ fn emulate() !void {
             flag_carry = (A & 0b1000_0000) != 0;
             A <<= 1;
             PC += 1;
-            flag_zero = A == 0;
-            flag_negative = A > 127;
+
+            setFlags_ZN(A);
             cycles = 2;
         },
         0x06 => { // ASL Zero Page
@@ -520,8 +506,7 @@ fn emulate() !void {
             flag_carry = (temp & 0b1000_0000) != 0;
             temp <<= 1;
 
-            flag_zero = temp == 0;
-            flag_negative = temp > 127;
+            setFlags_ZN(temp);
             try write(address, temp);
             cycles = 6;
         },
@@ -532,8 +517,7 @@ fn emulate() !void {
             flag_carry = (temp & 0b1000_0000) != 0;
             temp <<= 1;
             
-            flag_zero = temp == 0;
-            flag_negative = temp > 127;
+            setFlags_ZN(temp);
             try write(address, temp);
             cycles = 6;
         },
@@ -549,4 +533,9 @@ fn readOperands_AbsAddressed() u16 {
     PC += 1;
 
     return (high << 8) | low;
+}
+
+fn setFlags_ZN(byte: u8) void {
+    flag_zero = byte == 0;
+    flag_negative = (byte & 0b1000_0000) != 0;
 }
