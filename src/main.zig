@@ -466,6 +466,23 @@ fn emulate() !void {
             opROR(address, read(address));
             cycles = 6;
         },
+        0x09 => { // ORA Immediate
+            const byte = read(PC);
+            PC += 1;
+            opORA(byte);
+            cycles = 2;
+        },
+        0x05 => { // ORA Zero Page 
+            const address = read(PC);
+            PC += 1;
+            opORA(read(address));
+            cycles = 3;
+        },
+        0x0D => { // ORA Absolute
+            const address = readOperands_AbsAddressed();
+            opORA(read(address));
+            cycles = 4;
+        },
         else => {},
     }
 }
@@ -536,6 +553,11 @@ fn opROR(address: u16, value: u8) void {
     try write(address, result);
     flag_carry = new_carry;
     setFlags_ZN(result);
+}
+
+fn opORA(byte: u8) void {
+    A |= byte;
+    setFlags_ZN(A);
 }
 
 fn readOperands_AbsAddressed() u16 {
@@ -794,4 +816,13 @@ test "ROR /w previous carry" {
     opROR(0x0000, 0b1000_0001);
     try testing.expectEqual(0b1100_0000, RAM[0]);
     try testing.expect(flag_carry);
+}
+
+test "ORA" {
+    A = 0b0101_0101;
+    opORA(0b1010_1010);
+
+    try testing.expectEqual(0xFF, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(flag_negative);
 }
