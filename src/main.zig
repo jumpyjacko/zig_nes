@@ -442,6 +442,7 @@ fn emulate() !void {
             SP = X;
             PC += 1;
 
+            // DOES NOT SET ZN
             cycles = 2;
         },
         0xBA => { // TXS
@@ -534,7 +535,6 @@ fn setFlags_ZN(byte: u8) void {
     flag_negative = (byte & 0b1000_0000) != 0;
 }
 
-
 const testing = @import("std").testing;
 test "read() ram" {
     RAM[0] = 0x67;
@@ -615,13 +615,17 @@ test "readOperands_AbsAddressed()" {
     try testing.expectEqual(@as(u16, 0x8003), PC);
 }
 
-test "setFlags_ZN()" {
+test "setFlags_ZN() zero" {
     setFlags_ZN(0);
     try testing.expect(flag_zero);
+}
 
+test "setFlags_ZN() negative" {
     setFlags_ZN(@bitCast(@as(i8, -1)));
     try testing.expect(flag_negative);
+}
 
+test "setFlags_ZN() no set" {
     setFlags_ZN(1);
     try testing.expect(!flag_zero and !flag_negative);
 }
