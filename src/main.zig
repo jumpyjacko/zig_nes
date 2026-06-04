@@ -396,6 +396,38 @@ fn emulate() !void {
             opASL(address, read(address));
             cycles = 6;
         },
+        0x4A => { // LSR A
+            opLSR(A, read(A));
+            PC += 1;
+            cycles = 2;
+        },
+        0x46 => { // LSR Zero Page
+            const address = read(PC);
+            PC += 1;
+            opLSR(address, read(address));
+            cycles = 6;
+        },
+        0x4E => { // LSR Absolute
+            const address = readOperands_AbsAddressed();
+            opLSR(address, read(address));
+            cycles = 6;
+        },
+        0x2A => { // ROL A
+            opROL(A, read(A));
+            PC += 1;
+            cycles = 2;
+        },
+        0x26 => { // ROL Zero Page
+            const address = read(PC);
+            PC += 1;
+            opROL(address, read(address));
+            cycles = 6;
+        },
+        0x2E => { // ROL Absolute
+            const address = readOperands_AbsAddressed();
+            opROL(address, read(address));
+            cycles = 6;
+        },
         else => {},
     }
 }
@@ -423,6 +455,25 @@ fn opASL(address: u16, value: u8) void {
     const result = value << 1;
 
     try write(address, result);
+    setFlags_ZN(result);
+}
+
+fn opLSR(address: u16, value: u8) void {
+    flag_carry = (value & 1) != 0;
+    const result = value >> 1;
+
+    try write(address, result);
+    setFlags_ZN(result);
+}
+
+fn opROL(address: u16, value: u8) void {
+    const new_carry = (value & 0x80) != 0;
+
+    var result = value << 1;
+    if (flag_carry) result |= 1;
+
+    try write(address, result);
+    flag_carry = new_carry;
     setFlags_ZN(result);
 }
 
@@ -565,5 +616,37 @@ test "ASL normal" {
 test "ASL carry" {
     opASL(0x0000, 0b1000_0001);
     try testing.expectEqual(0b0000_0010, RAM[0]);
+    try testing.expect(flag_carry);
+}
+
+test "LSR normal" {
+    opLSR(0x0000, 2);
+    try testing.expectEqual(1, RAM[0]);
+}
+
+test "LSR carry" {
+    opLSR(0x0000, 3);
+    try testing.expectEqual(1, RAM[0]);
+    try testing.expect(flag_carry);
+}
+
+test "ROL normal" {
+    flag_carry = false;
+    opROL(0x0000, 0b0000_0001);
+    try testing.expectEqual(0b0000_0010, RAM[0]);
+    try testing.expect(!flag_carry);
+}
+
+test "ROL no previous carry" {
+    flag_carry = false;
+    opROL(0x0000, 0b1000_0001);
+    try testing.expectEqual(0b0000_0010, RAM[0]);
+    try testing.expect(flag_carry);
+}
+
+test "ROL /w previous carry" {
+    flag_carry = true;
+    opROL(0x0000, 0b1000_0001);
+    try testing.expectEqual(0b0000_0011, RAM[0]);
     try testing.expect(flag_carry);
 }
