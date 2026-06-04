@@ -541,33 +541,27 @@ fn setFlags_ZN(byte: u8) void {
 }
 
 
+const testing = @import("std").testing;
 test "read() ram" {
-    const testing = @import("std").testing;
-
     RAM[0] = 0x67;
     const ram = read(0x0000);
     try testing.expectEqual(0x67, ram);
 }
 
 test "read() ram mirrored" {
-    const testing = @import("std").testing;
-
     RAM[0] = 0x67;
     const ram_mirrored = read(0x0800);
     try testing.expectEqual(0x67, ram_mirrored);
 }
 
 test "read() rom" {
-    const testing = @import("std").testing;
-
     ROM[0] = 0x69;
     const rom = read(0x8000);
     try testing.expectEqual(0x69, rom);
 }
 
-test "readOperands_AbsAddressed()" {
-    const testing = @import("std").testing;
 
+test "readOperands_AbsAddressed()" {
     PC = 0x8001;
     ROM[1] = 0x08;
     ROM[2] = 0x80;
@@ -579,8 +573,6 @@ test "readOperands_AbsAddressed()" {
 }
 
 test "setFlags_ZN()" {
-    const testing = @import("std").testing;
-
     setFlags_ZN(0);
     try testing.expect(flag_zero);
 
