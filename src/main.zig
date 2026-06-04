@@ -492,37 +492,31 @@ fn emulate() !void {
             cycles = 2;
         },
         0x0A => { // ASL A
-            flag_carry = (A & 0b1000_0000) != 0;
-            A <<= 1;
+            opASL(A, read(A));
             PC += 1;
-
-            setFlags_ZN(A);
             cycles = 2;
         },
         0x06 => { // ASL Zero Page
             const address = read(PC);
             PC += 1;
-            var temp = read(address);
-            flag_carry = (temp & 0b1000_0000) != 0;
-            temp <<= 1;
-
-            setFlags_ZN(temp);
-            try write(address, temp);
+            opASL(address, read(address));
             cycles = 6;
         },
         0x0E => { // ASL Absolute
             const address = readOperands_AbsAddressed();
-            var temp: u8 = read(address);
-
-            flag_carry = (temp & 0b1000_0000) != 0;
-            temp <<= 1;
-            
-            setFlags_ZN(temp);
-            try write(address, temp);
+            opASL(address, read(address));
             cycles = 6;
         },
         else => {},
     }
+}
+
+fn opASL(address: u16, value: u8) void {
+    flag_carry = (value & 0b1000_0000) != 0;
+    const result = value << 1;
+
+    try write(address, result);
+    setFlags_ZN(result);
 }
 
 fn readOperands_AbsAddressed() u16 {
