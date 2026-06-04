@@ -472,7 +472,7 @@ fn emulate() !void {
             opORA(byte);
             cycles = 2;
         },
-        0x05 => { // ORA Zero Page 
+        0x05 => { // ORA Zero Page
             const address = read(PC);
             PC += 1;
             opORA(read(address));
@@ -489,7 +489,7 @@ fn emulate() !void {
             opAND(byte);
             cycles = 2;
         },
-        0x25 => { // AND Zero Page 
+        0x25 => { // AND Zero Page
             const address = read(PC);
             PC += 1;
             opAND(read(address));
@@ -506,7 +506,7 @@ fn emulate() !void {
             opEOR(byte);
             cycles = 2;
         },
-        0x45 => { // EOR Zero Page 
+        0x45 => { // EOR Zero Page
             const address = read(PC);
             PC += 1;
             opEOR(read(address));
@@ -872,7 +872,7 @@ test "ORA" {
 }
 
 test "AND" {
-    A =   0b0101_0101;
+    A = 0b0101_0101;
     opAND(0b1000_0111);
 
     try testing.expectEqual(0b0000_0101, A);
@@ -881,7 +881,7 @@ test "AND" {
 }
 
 test "EOR" {
-    A =   0b0101_0101;
+    A = 0b0101_0101;
     opEOR(0b1011_0111);
 
     try testing.expectEqual(0b1110_0010, A);
