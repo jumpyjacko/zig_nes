@@ -576,6 +576,40 @@ test "write() rom" {
     try testing.expectEqual(0x01, ROM[0]);
 }
 
+test "push (normal stack pointer)" {
+    SP = 0xFD;
+    push(0xAA);
+
+    try testing.expectEqual(0xAA, RAM[0x01FD]);
+    try testing.expectEqual(0xFC, SP);
+}
+
+test "push (underflow stack pointer)" {
+    SP = 0x00;
+    push(0xAA);
+
+    try testing.expectEqual(0xAA, RAM[0x01FF]);
+    try testing.expectEqual(0xFF, SP);
+}
+
+test "pull (normal stack pointer)" {
+    RAM[0x01AF] = 0x42;
+    SP = 0xAE;
+    const value = pull();
+
+    try testing.expectEqual(0x42, value);
+    try testing.expectEqual(0xAF, SP);
+}
+
+test "pull (overflow stack pointer)" {
+    RAM[0x0100] = 0x42;
+    SP = 0xFF;
+    const value = pull();
+
+    try testing.expectEqual(0x42, value);
+    try testing.expectEqual(0x00, SP);
+}
+
 test "readOperands_AbsAddressed()" {
     PC = 0x8001;
     ROM[1] = 0x08;
