@@ -270,6 +270,28 @@ fn emulate() !void {
             PC = (addr_h << 8) | addr_l;
             cycles = 3;
         },
+        0xE6 => { // INC Zero Page
+            const address = read(PC);
+            PC += 1;
+            opINC(address, read(address));
+            cycles = 5;
+        },
+        0xEE => { // INC Absolute
+            const address = readOperands_AbsAddressed();
+            opINC(address, read(address));
+            cycles = 6;
+        },
+        0xC6 => { // DEC Zero Page
+            const address = read(PC);
+            PC += 1;
+            opINC(address, read(address));
+            cycles = 5;
+        },
+        0xCE => { // DEC Absolute
+            const address = readOperands_AbsAddressed();
+            opINC(address, read(address));
+            cycles = 6;
+        },
         0xE8 => { // INX
             X +%= 1;
             PC += 1;
@@ -466,6 +488,18 @@ fn opBranch(condition: bool) void {
     }
 }
 
+fn opINC(address: u16, value: u8) void {
+    const result: u8 = value +% 1;
+    try write(address, result);
+    setFlags_ZN(result);
+}
+
+fn opDEC(address: u16, value: u8) void {
+    const result: u8 = value -% 1;
+    try write(address, result);
+    setFlags_ZN(result);
+}
+
 fn opASL(address: u16, value: u8) void {
     flag_carry = (value & 0b1000_0000) != 0;
     const result = value << 1;
@@ -633,6 +667,69 @@ test "generic branch (modify high bits)" {
 
     try testing.expectEqual(0x8101, PC);
     try testing.expectEqual(4, cycles);
+}
+
+test "INC normal" {
+    RAM[0] = 1;
+    opINC(0x0000, read(0x0000));
+
+    try testing.expectEqual(2, RAM[0]);
+    try testing.expect(!flag_zero);
+    try testing.expect(!flag_negative);
+}
+
+test "INC overflow" {
+    RAM[0] = 255;
+    opINC(0x0000, read(0x0000));
+
+    try testing.expectEqual(0, RAM[0]);
+    try testing.expect(flag_zero);
+    try testing.expect(!flag_negative);
+}
+
+test "INC set negative" {
+    RAM[0] = @as(u8, @bitCast(@as(i8, -128)));
+    opINC(0x0000, read(0x0000));
+
+    try testing.expectEqual(@as(u8, @bitCast(@as(i8, -127))), RAM[0]);
+    try testing.expect(!flag_zero);
+    try testing.expect(flag_negative);
+}
+
+test "DEC normal" {
+    RAM[0] = 2;
+    opDEC(0x0000, read(0x0000));
+
+    try testing.expectEqual(1, RAM[0]);
+    try testing.expect(!flag_zero);
+    try testing.expect(!flag_negative);
+}
+
+test "DEC overflow" {
+    RAM[0] = 0;
+    opDEC(0x0000, read(0x0000));
+
+    try testing.expectEqual(255, RAM[0]);
+    try testing.expect(!flag_zero);
+    try testing.expect(flag_negative);
+}
+
+test "DEC set zero" {
+    RAM[0] = 1;
+    opDEC(0x0000, read(0x0000));
+
+    try testing.expectEqual(0, RAM[0]);
+    try testing.expect(flag_zero);
+    try testing.expect(!flag_negative);
+}
+
+test "DEC set negative" {
+    RAM[0] = @as(u8, @bitCast(@as(i8, -126)));
+    opDEC(0x0000, read(0x0000));
+
+    try testing.expectEqual(@as(u8, @bitCast(@as(i8, -127))), RAM[0]);
+    try testing.expect(!flag_zero);
+    try testing.expect(flag_negative);
 }
 
 test "ASL normal" {
