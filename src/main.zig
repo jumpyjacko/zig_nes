@@ -536,6 +536,27 @@ test "setFlags_ZN() no set" {
     try testing.expect(!flag_zero and !flag_negative);
 }
 
+test "generic branch" {
+    PC = 0x8001;
+    ROM[1] = 0x01;
+
+    flag_carry = true;
+    opBranch(flag_carry);
+
+    try testing.expectEqual(0x8003, PC);
+}
+
+test "generic branch (modify high bits)" {
+    PC = 0x80FE;
+    ROM[0xFE] = 0x02;
+
+    flag_carry = true;
+    opBranch(flag_carry);
+
+    try testing.expectEqual(0x8101, PC);
+    try testing.expectEqual(4, cycles);
+}
+
 test "ASL normal" {
     opASL(0x0000, 2);
     try testing.expectEqual(4, RAM[0]);
