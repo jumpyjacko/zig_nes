@@ -500,6 +500,23 @@ fn emulate() !void {
             opAND(read(address));
             cycles = 4;
         },
+        0x49 => { // EOR Immediate
+            const byte = read(PC);
+            PC += 1;
+            opEOR(byte);
+            cycles = 2;
+        },
+        0x45 => { // EOR Zero Page 
+            const address = read(PC);
+            PC += 1;
+            opEOR(read(address));
+            cycles = 3;
+        },
+        0x4D => { // EOR Absolute
+            const address = readOperands_AbsAddressed();
+            opEOR(read(address));
+            cycles = 4;
+        },
         else => {},
     }
 }
@@ -579,6 +596,11 @@ fn opORA(byte: u8) void {
 
 fn opAND(byte: u8) void {
     A &= byte;
+    setFlags_ZN(A);
+}
+
+fn opEOR(byte: u8) void {
+    A ^= byte;
     setFlags_ZN(A);
 }
 
@@ -856,4 +878,13 @@ test "AND" {
     try testing.expectEqual(0b0000_0101, A);
     try testing.expect(!flag_zero);
     try testing.expect(!flag_negative);
+}
+
+test "EOR" {
+    A =   0b0101_0101;
+    opEOR(0b1011_0111);
+
+    try testing.expectEqual(0b1110_0010, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(flag_negative);
 }
