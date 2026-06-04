@@ -560,6 +560,21 @@ test "read() rom" {
     try testing.expectEqual(0x69, rom);
 }
 
+test "write() ram" {
+    RAM[0] = 0x01;
+    try testing.expectEqual(0x01, RAM[0]);
+
+    try write(0x0000, 0x02);
+    try testing.expectEqual(0x02, RAM[0]);
+}
+
+test "write() rom" {
+    ROM[0] = 0x01;
+    try testing.expectEqual(0x01, ROM[0]);
+
+    try write(0x8000, 0x02);
+    try testing.expectEqual(0x01, ROM[0]);
+}
 
 test "readOperands_AbsAddressed()" {
     PC = 0x8001;
