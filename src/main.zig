@@ -187,140 +187,28 @@ fn emulate() !void {
             cycles = 4;
         },
         0x10 => { // BPL
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (!flag_negative) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(!flag_negative);
         },
         0x30 => { // BMI
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (flag_negative) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(flag_negative);
         },
         0x50 => { // BVC
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (!flag_overflow) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(!flag_overflow);
         },
         0x70 => { // BVS
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (flag_overflow) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(flag_overflow);
         },
         0x90 => { // BCC
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (!flag_carry) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(!flag_carry);
         },
         0xB0 => { // BCS
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (flag_carry) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(flag_carry);
         },
         0xD0 => { // BNE
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (!flag_zero) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(!flag_zero);
         },
         0xF0 => { // BEQ
-            const offset: i8 = @as(i8, @bitCast(read(PC)));
-            PC += 1;
-
-            if (flag_zero) {
-                const old_pc = PC;
-                PC = @as(u16, @intCast(@as(i32, PC) + offset));
-
-                if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-                    cycles = 4;
-                } else {
-                    cycles = 3;
-                }
-            } else {
-                cycles = 2;
-            }
+            opBranch(flag_zero);
         },
         0x48 => { // PHA
             push(A);
@@ -509,6 +397,24 @@ fn emulate() !void {
             cycles = 6;
         },
         else => {},
+    }
+}
+
+fn opBranch(condition: bool) void {
+    const offset: i8 = @as(i8, @bitCast(read(PC)));
+    PC += 1;
+
+    if (condition) {
+        const old_pc = PC;
+        PC = @as(u16, @intCast(@as(i32, PC) + offset));
+
+        if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
+            cycles = 4;
+        } else {
+            cycles = 3;
+        }
+    } else {
+        cycles = 2;
     }
 }
 
