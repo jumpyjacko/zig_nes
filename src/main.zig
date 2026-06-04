@@ -535,3 +535,14 @@ test "setFlags_ZN() no set" {
     setFlags_ZN(1);
     try testing.expect(!flag_zero and !flag_negative);
 }
+
+test "ASL normal" {
+    opASL(0x0000, 2);
+    try testing.expectEqual(4, RAM[0]);
+}
+
+test "ASL carry" {
+    opASL(0x0000, 0b1000_0001);
+    try testing.expectEqual(0b0000_0010, RAM[0]);
+    try testing.expect(flag_carry);
+}
