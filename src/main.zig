@@ -541,18 +541,27 @@ fn setFlags_ZN(byte: u8) void {
 }
 
 
-test "read()" {
+test "read() ram" {
     const testing = @import("std").testing;
 
     RAM[0] = 0x67;
-    ROM[0] = 0x69;
-
     const ram = read(0x0000);
-    const ram_mirrored = read(0x0800);
-    const rom = read(0x8000);
-
     try testing.expectEqual(0x67, ram);
+}
+
+test "read() ram mirrored" {
+    const testing = @import("std").testing;
+
+    RAM[0] = 0x67;
+    const ram_mirrored = read(0x0800);
     try testing.expectEqual(0x67, ram_mirrored);
+}
+
+test "read() rom" {
+    const testing = @import("std").testing;
+
+    ROM[0] = 0x69;
+    const rom = read(0x8000);
     try testing.expectEqual(0x69, rom);
 }
 
