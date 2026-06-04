@@ -428,6 +428,22 @@ fn emulate() !void {
             opROL(address, read(address));
             cycles = 6;
         },
+        0x6A => { // ROR A
+            opROR(A, read(A));
+            PC += 1;
+            cycles = 2;
+        },
+        0x66 => { // ROR Zero Page
+            const address = read(PC);
+            PC += 1;
+            opROR(address, read(address));
+            cycles = 6;
+        },
+        0x6E => { // ROR Absolute
+            const address = readOperands_AbsAddressed();
+            opROR(address, read(address));
+            cycles = 6;
+        },
         else => {},
     }
 }
@@ -471,6 +487,17 @@ fn opROL(address: u16, value: u8) void {
 
     var result = value << 1;
     if (flag_carry) result |= 1;
+
+    try write(address, result);
+    flag_carry = new_carry;
+    setFlags_ZN(result);
+}
+
+fn opROR(address: u16, value: u8) void {
+    const new_carry = (value & 1) != 0;
+
+    var result = value >> 1;
+    if (flag_carry) result |= 0b1000_0000;
 
     try write(address, result);
     flag_carry = new_carry;
@@ -648,5 +675,26 @@ test "ROL /w previous carry" {
     flag_carry = true;
     opROL(0x0000, 0b1000_0001);
     try testing.expectEqual(0b0000_0011, RAM[0]);
+    try testing.expect(flag_carry);
+}
+
+test "ROR normal" {
+    flag_carry = false;
+    opROR(0x0000, 0b0000_0010);
+    try testing.expectEqual(0b0000_0001, RAM[0]);
+    try testing.expect(!flag_carry);
+}
+
+test "ROR no previous carry" {
+    flag_carry = false;
+    opROR(0x0000, 0b0000_0001);
+    try testing.expectEqual(0b0000_0000, RAM[0]);
+    try testing.expect(flag_carry);
+}
+
+test "ROR /w previous carry" {
+    flag_carry = true;
+    opROR(0x0000, 0b1000_0001);
+    try testing.expectEqual(0b1100_0000, RAM[0]);
     try testing.expect(flag_carry);
 }
