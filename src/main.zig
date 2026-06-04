@@ -541,15 +541,28 @@ fn setFlags_ZN(byte: u8) void {
 }
 
 
-test "flag_ZN" {
-    const expect = @import("std").testing.expect;
+test "readOperands_AbsAddressed()" {
+    const testing = @import("std").testing;
+
+    PC = 0x8001;
+    ROM[1] = 0x08;
+    ROM[2] = 0x80;
+
+    const address = readOperands_AbsAddressed();
+
+    try testing.expectEqual(@as(u16, 0x8008), address);
+    try testing.expectEqual(@as(u16, 0x8003), PC);
+}
+
+test "setFlags_ZN()" {
+    const testing = @import("std").testing;
 
     setFlags_ZN(0);
-    try expect(flag_zero);
+    try testing.expect(flag_zero);
 
     setFlags_ZN(@bitCast(@as(i8, -1)));
-    try expect(flag_negative);
+    try testing.expect(flag_negative);
 
     setFlags_ZN(1);
-    try expect(!flag_zero and !flag_negative);
+    try testing.expect(!flag_zero and !flag_negative);
 }
