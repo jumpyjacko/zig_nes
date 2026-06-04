@@ -541,6 +541,21 @@ fn setFlags_ZN(byte: u8) void {
 }
 
 
+test "read()" {
+    const testing = @import("std").testing;
+
+    RAM[0] = 0x67;
+    ROM[0] = 0x69;
+
+    const ram = read(0x0000);
+    const ram_mirrored = read(0x0800);
+    const rom = read(0x8000);
+
+    try testing.expectEqual(0x67, ram);
+    try testing.expectEqual(0x67, ram_mirrored);
+    try testing.expectEqual(0x69, rom);
+}
+
 test "readOperands_AbsAddressed()" {
     const testing = @import("std").testing;
 
