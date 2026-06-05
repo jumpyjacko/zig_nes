@@ -602,6 +602,17 @@ fn emulate() !void {
             opCMP(read(address), Y);
             cycles = 4;
         },
+        0x24 => { // BIT Zero Page
+            const address = read(PC);
+            PC += 1;
+            opBIT(read(address));
+            cycles = 3;
+        },
+        0x2C => { // BIT Absolute
+            const address = readOperands_AbsAddressed();
+            opBIT(read(address));
+            cycles = 4;
+        },
         else => {},
     }
 }
@@ -713,6 +724,12 @@ fn opCMP(byte: u8, register: u8) void {
     flag_carry = byte < register;
     flag_zero = byte == register;
     flag_negative = (register -% byte) > 127;
+}
+
+fn opBIT(byte: u8) void {
+    flag_zero = (A & byte) == 0;
+    flag_negative = (byte & 0x80) != 0;
+    flag_overflow = (byte & 0x40) != 0;
 }
 
 fn readOperands_AbsAddressed() u16 {
@@ -1097,4 +1114,25 @@ test "CMP 3" {
     opCMP(5, A);
 
     try testing.expectEqual(true, flag_negative);
+}
+
+test "BIT 1" {
+    A = 0b0101_0101;
+    opBIT(0b1010_1010);
+
+    try testing.expectEqual(true, flag_zero);
+}
+
+test "BIT 2" {
+    A = 0b0101_0101;
+    opBIT(0b1000_0000);
+
+    try testing.expectEqual(true, flag_negative);
+}
+
+test "BIT 3" {
+    A = 0b0101_0101;
+    opBIT(0b0100_0000);
+
+    try testing.expectEqual(true, flag_overflow);
 }
