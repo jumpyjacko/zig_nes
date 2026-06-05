@@ -11,15 +11,33 @@ const QKeySequence = qt6.QKeySequence;
 const QVBoxLayout = qt6.QVBoxLayout;
 const QLabel = qt6.QLabel;
 const QListWidget = qt6.QListWidget;
+const QFileDialog = qt6.QFileDialog;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
 const AppWindow = struct {
     var window: QMainWindow = undefined;
+    var gpa: std.mem.Allocator = undefined;
 
     fn exit_window(action: QAction) callconv(.c) void {
         _ = action;
         _ = window.Close();
+    }
+
+    fn load_rom(action: QAction) callconv(.c) void {
+        _ = action;
+
+        const file_path = QFileDialog.GetOpenFileName4(
+            gpa,
+            window,
+            "Open ROM File",
+            "",
+            "NES ROMs (*.nes);;All Files (*)",
+        );
+
+        if (file_path.len > 0) {
+            std.debug.print("Selected ROM: {s}\n", .{file_path});
+        }
     }
 };
 
@@ -32,6 +50,7 @@ pub fn initQtApplication(init: std.process.Init) !void {
     defer qapp.Delete();
 
     AppWindow.window = QMainWindow.New2();
+    AppWindow.gpa = init.gpa;
     defer AppWindow.window.Delete();
     AppWindow.window.SetFixedSize2(300, 250);
 
@@ -45,6 +64,7 @@ pub fn initQtApplication(init: std.process.Init) !void {
 
     const file_menu = menu_bar.AddMenu2("Emulator");
     const load_rom_action = QAction.New2("Load rom...");
+    load_rom_action.OnTriggered(AppWindow.load_rom);
     file_menu.AddAction(load_rom_action);
 
     const reset_action = QAction.New2("Reset");
