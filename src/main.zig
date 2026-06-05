@@ -517,6 +517,23 @@ fn emulate() !void {
             opEOR(read(address));
             cycles = 4;
         },
+        0x69 => { // ADC Immediate
+            const other = read(PC);
+            PC += 1;
+            opADC(other);
+            cycles = 2;
+        },
+        0x65 => { // ADC Zero Page
+            const address = read(PC);
+            PC += 1;
+            opADC(read(address));
+            cycles = 3;
+        },
+        0x6D => { // ADC Absolute
+            const address = readOperands_AbsAddressed();
+            opADC(read(address));
+            cycles = 4;
+        },
         else => {},
     }
 }
@@ -601,6 +618,15 @@ fn opAND(byte: u8) void {
 
 fn opEOR(byte: u8) void {
     A ^= byte;
+    setFlags_ZN(A);
+}
+
+fn opADC(byte: u8) void {
+    const sum: u32 = @as(u32, byte) + @as(u32, A) + (@intFromBool(flag_carry));
+    flag_overflow = (~(A ^ byte) & (A ^ sum) & 0x80) != 0;
+    flag_carry = sum > 0xFF;
+    A = @truncate(sum);
+
     setFlags_ZN(A);
 }
 
@@ -887,4 +913,43 @@ test "EOR" {
     try testing.expectEqual(0b1110_0010, A);
     try testing.expect(!flag_zero);
     try testing.expect(flag_negative);
+}
+
+test "ADC normal" {
+    A = 0x50;
+    flag_carry = true;
+
+    opADC(0x20);
+
+    try testing.expectEqual(0x71, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(!flag_negative);
+    try testing.expect(!flag_carry);
+    try testing.expect(!flag_overflow);
+}
+
+test "ADC carry set" {
+    A = 0xF0;
+    flag_carry = false;
+
+    opADC(0x20);
+
+    try testing.expectEqual(0x10, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(!flag_negative);
+    try testing.expect(flag_carry);
+    try testing.expect(!flag_overflow);
+}
+
+test "ADC overflow set" {
+    A = 0x70;
+    flag_carry = false;
+
+    opADC(0x20);
+
+    try testing.expectEqual(0x90, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(flag_negative);
+    try testing.expect(!flag_carry);
+    try testing.expect(flag_overflow);
 }
