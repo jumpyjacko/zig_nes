@@ -551,6 +551,57 @@ fn emulate() !void {
             opSBC(read(address));
             cycles = 4;
         },
+        0xC9 => { // CMP Immediate
+            const value = read(PC);
+            PC += 1;
+            opCMP(value, A);
+            cycles = 2;
+        },
+        0xC5 => { // CMP Zero Page
+            const address = read(PC);
+            PC += 1;
+            opCMP(read(address), A);
+            cycles = 3;
+        },
+        0xCD => { // CMP Absolute
+            const address = readOperands_AbsAddressed();
+            opCMP(read(address), A);
+            cycles = 4;
+        },
+        0xE0 => { // CPX Immediate
+            const value = read(PC);
+            PC += 1;
+            opCMP(value, X);
+            cycles = 2;
+        },
+        0xE4 => { // CPX Zero Page
+            const address = read(PC);
+            PC += 1;
+            opCMP(read(address), X);
+            cycles = 3;
+        },
+        0xEC => { // CPX Absolute
+            const address = readOperands_AbsAddressed();
+            opCMP(read(address), X);
+            cycles = 4;
+        },
+        0xC0 => { // CPY Immediate
+            const value = read(PC);
+            PC += 1;
+            opCMP(value, Y);
+            cycles = 2;
+        },
+        0xC4 => { // CPY Zero Page
+            const address = read(PC);
+            PC += 1;
+            opCMP(read(address), Y);
+            cycles = 3;
+        },
+        0xCC => { // CPY Absolute
+            const address = readOperands_AbsAddressed();
+            opCMP(read(address), Y);
+            cycles = 4;
+        },
         else => {},
     }
 }
@@ -656,6 +707,12 @@ fn opSBC(byte: u8) void {
     A = final_sum;
 
     setFlags_ZN(A);
+}
+
+fn opCMP(byte: u8, register: u8) void {
+    flag_carry = byte < register;
+    flag_zero = byte == register;
+    flag_negative = (register -% byte) > 127;
 }
 
 fn readOperands_AbsAddressed() u16 {
@@ -1019,4 +1076,25 @@ test "SBC overflow set" {
     try testing.expect(!flag_negative);
     try testing.expect(flag_carry);
     try testing.expect(flag_overflow);
+}
+
+test "CMP Z" {
+    A = 1;
+    opCMP(1, A);
+
+    try testing.expectEqual(true, flag_zero);
+}
+
+test "CMP C" {
+    A = 2;
+    opCMP(1, A);
+
+    try testing.expectEqual(true, flag_carry);
+}
+
+test "CMP 3" {
+    A = 1;
+    opCMP(5, A);
+
+    try testing.expectEqual(true, flag_negative);
 }
