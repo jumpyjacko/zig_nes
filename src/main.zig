@@ -613,6 +613,40 @@ fn emulate() !void {
             opBIT(read(address));
             cycles = 4;
         },
+        0x00 => { // BRK
+            PC += 1;
+            push(@truncate(PC >> 8));
+            push(@truncate(PC));
+
+            var status: u8 = 0;
+            if (flag_carry) status |= 0b0000_0001;
+            if (flag_zero) status |= 0b0000_0010;
+            if (flag_interupt_disable) status |= 0b0000_0100;
+            if (flag_decimal) status |= 0b0000_1000;
+            status |= 0b0011_0000; // always set in PHP instruction
+            if (flag_overflow) status |= 0b0100_0000;
+            if (flag_negative) status |= 0b1000_0000;
+            push(status);
+
+            const temp_low = read(0xFFFE);
+            const temp_high: u16 = read(0xFFFF);
+            PC = (temp_high << 8) + temp_low;
+            cycles = 7;
+        },
+        0x40 => { // RTI
+            const status = pull();
+            flag_carry = (status & 0b0000_0001) != 0;
+            flag_zero = (status & 0b0000_0001) != 0;
+            flag_interupt_disable = (status & 0b0000_0001) != 0;
+            flag_decimal = (status & 0b0000_0001) != 0;
+            flag_overflow = (status & 0b0000_0001) != 0;
+            flag_negative = (status & 0b0000_0001) != 0;
+
+            const address_high: u16 = pull();
+            const address_low = pull();
+            PC = (address_high << 8) + address_low;
+            cycles = 6;
+        },
         else => {},
     }
 }
