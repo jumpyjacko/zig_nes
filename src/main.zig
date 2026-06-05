@@ -534,6 +534,23 @@ fn emulate() !void {
             opADC(read(address));
             cycles = 4;
         },
+        0xE9 => { // SBC Immediate
+            const other = read(PC);
+            PC += 1;
+            opSBC(other);
+            cycles = 2;
+        },
+        0xE5 => { // SBC Zero Page
+            const address = read(PC);
+            PC += 1;
+            opSBC(read(address));
+            cycles = 3;
+        },
+        0xED => { // SBC Absolute
+            const address = readOperands_AbsAddressed();
+            opSBC(read(address));
+            cycles = 4;
+        },
         else => {},
     }
 }
@@ -626,6 +643,17 @@ fn opADC(byte: u8) void {
     flag_overflow = (~(A ^ byte) & (A ^ sum) & 0x80) != 0;
     flag_carry = sum > 0xFF;
     A = @truncate(sum);
+
+    setFlags_ZN(A);
+}
+
+fn opSBC(byte: u8) void {
+    const borrow: u8 = if (flag_carry) 0 else 1;
+    const sum = @as(i32, A) - @as(i32, byte) - borrow;
+    const final_sum = @as(u8, @truncate(@as(u32, @bitCast(sum))));
+    flag_overflow = ((A ^ byte) & (A ^ final_sum) & 0x80) != 0;
+    flag_carry = final_sum >= 0;
+    A = final_sum;
 
     setFlags_ZN(A);
 }
@@ -951,5 +979,44 @@ test "ADC overflow set" {
     try testing.expect(!flag_zero);
     try testing.expect(flag_negative);
     try testing.expect(!flag_carry);
+    try testing.expect(flag_overflow);
+}
+
+test "SBC normal" {
+    A = 0x50;
+    flag_carry = true;
+
+    opSBC(0x20);
+
+    try testing.expectEqual(0x30, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(!flag_negative);
+    try testing.expect(flag_carry);
+    try testing.expect(!flag_overflow);
+}
+
+test "SBC carry set" {
+    A = 0x10;
+    flag_carry = false;
+
+    opSBC(0x20);
+
+    try testing.expectEqual(0xEF, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(flag_negative);
+    try testing.expect(flag_carry);
+    try testing.expect(!flag_overflow);
+}
+
+test "SBC overflow set" {
+    A = 0x90;
+    flag_carry = false;
+
+    opSBC(0x20);
+
+    try testing.expectEqual(0x6F, A);
+    try testing.expect(!flag_zero);
+    try testing.expect(!flag_negative);
+    try testing.expect(flag_carry);
     try testing.expect(flag_overflow);
 }
