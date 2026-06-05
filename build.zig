@@ -11,8 +11,37 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
+            .link_libcpp = true,
         }),
     });
+
+    const qt6zig = b.dependency("libqt6zig", .{
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+
+    exe.root_module.linkSystemLibrary("Qt6Widgets", .{});
+    exe.root_module.linkSystemLibrary("Qt6Gui", .{});
+    exe.root_module.linkSystemLibrary("Qt6Core", .{});
+    exe.root_module.addImport("libqt6zig", qt6zig.module("libqt6zig"));
+
+    const qtlibs = [_][]const u8{
+        "qapplication",
+        "qwidget",
+        "qmenubar",
+        "qmenu",
+        "qkeysequence",
+        "qaction",
+        "qmainwindow",
+        "qboxlayout",
+        "qlabel",
+        "qlistwidget",
+    };
+
+    for (qtlibs) |lib| {
+        exe.root_module.linkLibrary(qt6zig.artifact(lib));
+    }
 
     b.installArtifact(exe);
 
