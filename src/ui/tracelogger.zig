@@ -16,6 +16,7 @@ const QTreeWidget = qt6.QTreeWidget;
 const QTreeWidgetItem = qt6.QTreeWidgetItem;
 const QDialog = qt6.QDialog;
 const QCheckBox = qt6.QCheckBox;
+const QFont = qt6.QFont;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
@@ -82,11 +83,14 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     top_layout.AddWidget(logging_checkbox);
     layout.AddLayout(top_layout);
 
+    const mono_font = QFont.New2("monospace");
+
     TraceloggerWindow.tree_widget = QTreeWidget.New2();
     TraceloggerWindow.tree_widget.SetColumnCount(2);
-    const headers: [2][]const u8 = .{ "Disassembly", "Register" };
+    const headers: [2][]const u8 = .{ "Disassembly", "Registers" };
     TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
     TraceloggerWindow.tree_widget.SetColumnWidth(0, 250);
+    TraceloggerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(TraceloggerWindow.tree_widget);
 
     TraceloggerWindow.window.Show();
@@ -95,10 +99,10 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
 pub fn log_trace() void {
     var buffer_1: [256]u8 = undefined;
     const opcode: u8 = emulator.read(emulator.PC);
-    const disassembly = std.fmt.bufPrint(&buffer_1, "{x}: \t{x} \t{s}", .{ emulator.PC, opcode, opcode_names[opcode] }) catch @panic("Failed to buf print");
+    const disassembly = std.fmt.bufPrint(&buffer_1, "{x:0<4}: \t{x:0<2} \t{s}", .{ emulator.PC, opcode, opcode_names[opcode] }) catch @panic("Failed to buf print");
 
     var buffer_2: [256]u8 = undefined;
-    const registers = std.fmt.bufPrint(&buffer_2, "A: 0x{x}\tX: 0x{x}\tY: 0x{x}", .{ emulator.PC, opcode, opcode_names[opcode] }) catch @panic("Failed to buf print");
+    const registers = std.fmt.bufPrint(&buffer_2, "A: 0x{x:0<2}\tX: 0x{x:0<2}\tY: 0x{x:0<2}", .{ emulator.A, emulator.X, emulator.Y }) catch @panic("Failed to buf print");
 
     TraceloggerWindow.addEntry(disassembly, registers);
 }
