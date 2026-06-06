@@ -44,8 +44,8 @@ pub const TraceloggerWindow = struct {
     pub var tree_widget: QTreeWidget = undefined;
     pub var logging_enabled: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
-    fn addEntry(disassembly: []const u8, registers: []const u8) void {
-        const entries: [2][]const u8 = .{ disassembly, registers };
+    fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8) void {
+        const entries: [3][]const u8 = .{ disassembly, registers, processor_flags };
         const entry = QTreeWidgetItem.New2(main_window.AppWindow.gpa, &entries);
         tree_widget.AddTopLevelItem(entry);
     }
@@ -67,7 +67,7 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
 
     TraceloggerWindow.window = QDialog.New(main_window.AppWindow.window);
     TraceloggerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
-    TraceloggerWindow.window.Resize(600, 600);
+    TraceloggerWindow.window.Resize(750, 800);
     TraceloggerWindow.window.SetSizeGripEnabled(true);
     TraceloggerWindow.window.SetWindowTitle("zig_nes - tracelogger");
 
@@ -86,10 +86,11 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     const mono_font = QFont.New2("monospace");
 
     TraceloggerWindow.tree_widget = QTreeWidget.New2();
-    TraceloggerWindow.tree_widget.SetColumnCount(2);
-    const headers: [2][]const u8 = .{ "Disassembly", "Registers" };
+    TraceloggerWindow.tree_widget.SetColumnCount(3);
+    const headers: [3][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)" };
     TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
-    TraceloggerWindow.tree_widget.SetColumnWidth(0, 250);
+    TraceloggerWindow.tree_widget.SetColumnWidth(0, 200);
+    TraceloggerWindow.tree_widget.SetColumnWidth(1, 350);
     TraceloggerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(TraceloggerWindow.tree_widget);
 
@@ -99,10 +100,32 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
 pub fn log_trace() void {
     var buffer_1: [256]u8 = undefined;
     const opcode: u8 = emulator.read(emulator.PC);
-    const disassembly = std.fmt.bufPrint(&buffer_1, "{x:0<4}: \t{x:0<2} \t{s}", .{ emulator.PC, opcode, opcode_names[opcode] }) catch @panic("Failed to buf print");
+    const disassembly = std.fmt.bufPrint(
+        &buffer_1,
+        "{x:0<4}: \t{x:0<2}  {s}",
+        .{ emulator.PC, opcode, opcode_names[opcode] },
+    ) catch @panic("Failed to buf print");
 
     var buffer_2: [256]u8 = undefined;
-    const registers = std.fmt.bufPrint(&buffer_2, "A: 0x{x:0<2}\tX: 0x{x:0<2}\tY: 0x{x:0<2}", .{ emulator.A, emulator.X, emulator.Y }) catch @panic("Failed to buf print");
+    const registers = std.fmt.bufPrint(
+        &buffer_2,
+        "A: 0x{x:0<2}  X: 0x{x:0<2}  Y: 0x{x:0<2}  SP: 0x{x:0<2}",
+        .{ emulator.A, emulator.X, emulator.Y, emulator.SP },
+    ) catch @panic("Failed to buf print");
 
-    TraceloggerWindow.addEntry(disassembly, registers);
+    var buffer_3: [256]u8 = undefined;
+    const processor_flags = std.fmt.bufPrint(
+        &buffer_3,
+        "{s} {s} | {s} {s} {s} {s}",
+        .{
+            (if (emulator.flag_negative) "N" else "-"),
+            (if (emulator.flag_overflow) "V" else "-"),
+            (if (emulator.flag_decimal) "D" else "-"),
+            (if (emulator.flag_interupt_disable) "I" else "-"),
+            (if (emulator.flag_zero) "Z" else "-"),
+            (if (emulator.flag_carry) "C" else "-"),
+    },
+    ) catch @panic("Failed to buf print");
+
+    TraceloggerWindow.addEntry(disassembly, registers, processor_flags);
 }
