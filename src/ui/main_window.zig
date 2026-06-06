@@ -49,18 +49,22 @@ pub const AppWindow = struct { // HACK: idek man
                 return;
             };
 
-            if (emu_thread) |thread| {
-                emulator.CPU_Halted.store(true, .monotonic);
-                thread.join();
-                emu_thread = null;
-            }
-
-            emulator.CPU_Halted.store(false, .monotonic);
-            emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
-                std.log.err("Failed to spawn emulator thread: {any}", .{err});
-                return;
-            };
+            resetEmulator();
         }
+    }
+
+    fn resetEmulator() void {
+        if (emu_thread) |thread| {
+            emulator.CPU_Halted.store(true, .monotonic);
+            thread.join();
+            emu_thread = null;
+        }
+
+        emulator.CPU_Halted.store(false, .monotonic);
+        emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
+            std.log.err("Failed to spawn emulator thread: {any}", .{err});
+            return;
+        };
     }
 
     fn freeROMPath() void {
