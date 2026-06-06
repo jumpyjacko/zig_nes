@@ -80,6 +80,12 @@ pub fn initQtApplication(init: std.process.Init) !void {
     // traceloggerAction.OnTriggered();
     tools_menu.AddAction(tracelogger_action);
 
+    const layout = QVBoxLayout.New(widget);
+    const rom_status_label = QLabel.New3("No ROM loaded. Load one from Emulator > Load ROM...");
+    rom_status_label.SetAlignment(qnamespace_enums.AlignmentFlag.AlignVCenter | qnamespace_enums.AlignmentFlag.AlignHCenter);
+    rom_status_label.SetWordWrap(true);
+    layout.AddWidget(rom_status_label);
+
     AppWindow.window.Show();
 
     _ = QApplication.Exec();
