@@ -10,10 +10,12 @@ const QMenu = qt6.QMenu;
 const QAction = qt6.QAction;
 const QKeySequence = qt6.QKeySequence;
 const QVBoxLayout = qt6.QVBoxLayout;
+const QHBoxLayout = qt6.QHBoxLayout;
 const QLabel = qt6.QLabel;
 const QTreeWidget = qt6.QTreeWidget;
 const QTreeWidgetItem = qt6.QTreeWidgetItem;
 const QDialog = qt6.QDialog;
+const QCheckBox = qt6.QCheckBox;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
@@ -37,8 +39,14 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     TraceloggerWindow.window.SetWindowTitle("zig_nes - tracelogger");
 
     const layout = QVBoxLayout.New(TraceloggerWindow.window);
+    const top_layout = QHBoxLayout.New2();
     const label = QLabel.New3("Tracelogger");
-    layout.AddWidget(label);
+    const logging_checkbox = QCheckBox.New3("Enable logging");
+    logging_checkbox.SetLayoutDirection(qnamespace_enums.LayoutDirection.RightToLeft);
+    top_layout.AddWidget(label);
+    top_layout.AddStretch();
+    top_layout.AddWidget(logging_checkbox);
+    layout.AddLayout(top_layout);
 
     TraceloggerWindow.tree_widget = QTreeWidget.New2();
     TraceloggerWindow.tree_widget.SetColumnCount(2);
