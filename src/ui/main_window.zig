@@ -53,7 +53,14 @@ pub const AppWindow = struct { // HACK: idek man
         }
     }
 
+    fn resetActionWrapper(action: QAction) callconv(.c) void {
+        _ = action;
+        resetEmulator();
+    }
+
     fn resetEmulator() void {
+        if (ROM_path.len == 0) return;
+
         if (emu_thread) |thread| {
             emulator.CPU_Halted.store(true, .monotonic);
             thread.join();
@@ -103,6 +110,7 @@ pub fn initQtApplication(init: std.process.Init) !void {
     file_menu.AddAction(load_rom_action);
 
     const reset_action = QAction.New2("Reset");
+    reset_action.OnTriggered(AppWindow.resetActionWrapper);
     file_menu.AddAction(reset_action);
 
     const exit_action = QAction.New2("Exit");
