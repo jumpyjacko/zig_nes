@@ -1,6 +1,8 @@
 const std = @import("std");
 const qt6 = @import("libqt6zig");
 
+const emulator = @import("../emulator.zig");
+
 const QApplication = qt6.QApplication;
 const QMainWindow = qt6.QMainWindow;
 const QWidget = qt6.QWidget;
@@ -18,6 +20,9 @@ const qnamespace_enums = qt6.qnamespace_enums;
 const AppWindow = struct {
     var window: QMainWindow = undefined;
     var gpa: std.mem.Allocator = undefined;
+    var io: std.Io = undefined;
+    var ROM_path: []const u8 = "";
+    var emu_thread: ?std.Thread = null;
 
     fn exit_window(action: QAction) callconv(.c) void {
         _ = action;
@@ -34,9 +39,32 @@ const AppWindow = struct {
             "",
             "NES ROMs (*.nes);;All Files (*)",
         );
+        defer gpa.free(file_path);
 
         if (file_path.len > 0) {
-            std.debug.print("Selected ROM: {s}\n", .{file_path});
+            if (ROM_path.len > 0) {
+                gpa.free(ROM_path);
+            }
+            ROM_path = gpa.dupe(u8, file_path) catch {
+                return;
+            };
+
+            if (emu_thread) |thread| {
+                emulator.CPU_Halted = true;
+                thread.join();
+                emu_thread = null;
+            }
+
+            emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
+                std.log.err("Failed to spawn emulator thread: {any}", .{err});
+                return;
+            };
+        }
+    }
+
+    fn freeROMPath() void {
+        if (ROM_path.len > 0) {
+            gpa.free(ROM_path);
         }
     }
 };
@@ -51,7 +79,9 @@ pub fn initQtApplication(init: std.process.Init) !void {
 
     AppWindow.window = QMainWindow.New2();
     AppWindow.gpa = init.gpa;
+    AppWindow.io = init.io;
     defer AppWindow.window.Delete();
+    defer AppWindow.freeROMPath();
     AppWindow.window.SetFixedSize2(300, 250);
 
     const widget = QWidget.New2();

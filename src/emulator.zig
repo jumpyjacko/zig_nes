@@ -22,6 +22,14 @@ pub var flag_negative: bool = false;
 pub var CPU_Halted = false;
 pub var cycles: usize = 0;
 
+pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
+    std.log.info("File path loaded: {s}", .{path});
+    reset(io, path) catch |err| {
+        std.log.err("Emulator failed to start: {any}", .{err});
+        return;
+    };
+}
+
 fn read(address: u16) u8 {
     if (address <= 0x1FFF) {
         return RAM[address & 0b0000_0111_1111_1111];
@@ -54,8 +62,10 @@ fn pull() u8 {
 }
 
 pub fn reset(io: std.Io, path: []const u8) !void {
+    if (path.len == 0) return error.NoFile;
+
     var file = try std.Io.Dir.cwd().openFile(io, path, .{
-        .mode = .read_only,
+        .mode = .read_only
     });
     defer file.close(io);
 
