@@ -13,7 +13,6 @@ const QAction = qt6.QAction;
 const QKeySequence = qt6.QKeySequence;
 const QVBoxLayout = qt6.QVBoxLayout;
 const QLabel = qt6.QLabel;
-const QListWidget = qt6.QListWidget;
 const QFileDialog = qt6.QFileDialog;
 
 const qnamespace_enums = qt6.qnamespace_enums;

@@ -36,7 +36,7 @@ pub fn build(b: *std.Build) void {
         "qmainwindow",
         "qboxlayout",
         "qlabel",
-        "qlistwidget",
+        "qtreewidget",
         "qfiledialog",
         "qdialog",
     };
