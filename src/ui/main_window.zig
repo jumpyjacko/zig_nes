@@ -50,11 +50,12 @@ const AppWindow = struct {
             };
 
             if (emu_thread) |thread| {
-                emulator.CPU_Halted = true;
+                emulator.CPU_Halted.store(true, .monotonic);
                 thread.join();
                 emu_thread = null;
             }
 
+            emulator.CPU_Halted.store(false, .monotonic);
             emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
                 std.log.err("Failed to spawn emulator thread: {any}", .{err});
                 return;

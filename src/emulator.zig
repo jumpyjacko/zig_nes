@@ -19,7 +19,7 @@ pub var flag_decimal: bool = false;
 pub var flag_overflow: bool = false;
 pub var flag_negative: bool = false;
 
-pub var CPU_Halted = false;
+pub var CPU_Halted: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 pub var cycles: usize = 0;
 
 pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
@@ -86,7 +86,7 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 }
 
 pub fn run() !void {
-    while (!CPU_Halted) {
+    while (!CPU_Halted.load(.monotonic)) {
         try emulate();
     }
 }
@@ -97,7 +97,7 @@ fn emulate() !void {
 
     switch (opcode) {
         0x02 => { // HLT
-            CPU_Halted = true;
+            CPU_Halted.store(true, .monotonic);
         },
         0xA0 => { // LDY Immediate
             Y = read(PC);
