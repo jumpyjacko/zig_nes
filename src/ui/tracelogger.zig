@@ -22,10 +22,18 @@ const qnamespace_enums = qt6.qnamespace_enums;
 pub const TraceloggerWindow = struct {
     pub var window: QDialog = undefined;
     pub var tree_widget: QTreeWidget = undefined;
+    pub var logging_enabled: bool = false;
 
     fn addEntry(disassembly: []const u8, registers: []const u8) void {
         const entry = QTreeWidgetItem.New2(main_window.AppWindow.gpa, .{ disassembly, registers });
         tree_widget.AddTopLevelItem(entry);
+    }
+
+    fn checkboxClicked(checkbox: QCheckBox, state: i32) callconv(.c) void {
+        _ = checkbox;
+        logging_enabled = state > 0;
+
+        std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled});
     }
 };
 
@@ -43,6 +51,8 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     const label = QLabel.New3("Tracelogger");
     const logging_checkbox = QCheckBox.New3("Enable logging");
     logging_checkbox.SetLayoutDirection(qnamespace_enums.LayoutDirection.RightToLeft);
+    logging_checkbox.OnStateChanged(TraceloggerWindow.checkboxClicked);
+
     top_layout.AddWidget(label);
     top_layout.AddStretch();
     top_layout.AddWidget(logging_checkbox);
