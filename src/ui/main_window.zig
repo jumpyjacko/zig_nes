@@ -1,8 +1,9 @@
 const std = @import("std");
-const qt6 = @import("libqt6zig");
 
 const emulator = @import("../emulator.zig");
+const tracelogger = @import("tracelogger.zig");
 
+const qt6 = @import("libqt6zig");
 const QApplication = qt6.QApplication;
 const QMainWindow = qt6.QMainWindow;
 const QWidget = qt6.QWidget;
@@ -17,10 +18,10 @@ const QFileDialog = qt6.QFileDialog;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
-const AppWindow = struct {
-    var window: QMainWindow = undefined;
-    var gpa: std.mem.Allocator = undefined;
-    var io: std.Io = undefined;
+pub const AppWindow = struct { // HACK: idek man
+    pub var window: QMainWindow = undefined;
+    pub var gpa: std.mem.Allocator = undefined;
+    pub var io: std.Io = undefined;
     var ROM_path: []const u8 = "";
     var emu_thread: ?std.Thread = null;
 
@@ -108,7 +109,7 @@ pub fn initQtApplication(init: std.process.Init) !void {
 
     const tools_menu = menu_bar.AddMenu2("Tools");
     const tracelogger_action = QAction.New2("Tracelogger");
-    // traceloggerAction.OnTriggered();
+    tracelogger_action.OnTriggered(tracelogger.openTracelogger);
     tools_menu.AddAction(tracelogger_action);
 
     const layout = QVBoxLayout.New(widget);

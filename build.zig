@@ -38,6 +38,7 @@ pub fn build(b: *std.Build) void {
         "qlabel",
         "qlistwidget",
         "qfiledialog",
+        "qdialog",
     };
 
     for (qtlibs) |lib| {
