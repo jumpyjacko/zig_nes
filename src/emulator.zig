@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const tracelogger = @import("ui/tracelogger.zig");
+
 pub var PC: u16 = undefined;
 pub var A: u8 = undefined;
 pub var X: u8 = undefined;
@@ -30,7 +32,7 @@ pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     };
 }
 
-fn read(address: u16) u8 {
+pub fn read(address: u16) u8 {
     if (address <= 0x1FFF) {
         return RAM[address & 0b0000_0111_1111_1111];
     }
@@ -88,6 +90,10 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 pub fn run() !void {
     while (!CPU_Halted.load(.monotonic)) {
         try emulate();
+
+        if (tracelogger.TraceloggerWindow.logging_enabled.load(.monotonic)) {
+            tracelogger.log_trace();
+        }
     }
 }
 
