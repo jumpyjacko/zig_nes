@@ -105,19 +105,22 @@ pub fn initQtApplication(init: std.process.Init) !void {
     AppWindow.window.SetMenuBar(menu_bar);
     menu_bar.SetNativeMenuBar(false);
 
-    const file_menu = menu_bar.AddMenu2("Emulator");
+    const file_menu = menu_bar.AddMenu2("File");
     const load_rom_action = QAction.New2("Load rom...");
     load_rom_action.OnTriggered(AppWindow.load_rom);
     file_menu.AddAction(load_rom_action);
 
-    const reset_action = QAction.New2("Reset");
-    reset_action.OnTriggered(AppWindow.resetActionWrapper);
-    file_menu.AddAction(reset_action);
+    _ = file_menu.AddSeparator();
 
     const exit_action = QAction.New2("Exit");
     exit_action.SetShortcut(QKeySequence.New2("Ctrl+Q"));
     exit_action.OnTriggered(AppWindow.exit_window);
     file_menu.AddAction(exit_action);
+
+    const emulation_menu = menu_bar.AddMenu2("Emulation");
+    const reset_action = QAction.New2("Reset");
+    reset_action.OnTriggered(AppWindow.resetActionWrapper);
+    emulation_menu.AddAction(reset_action);
 
     const tools_menu = menu_bar.AddMenu2("Tools");
     const tracelogger_action = QAction.New2("Tracelogger");
