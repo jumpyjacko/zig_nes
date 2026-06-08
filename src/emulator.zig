@@ -121,12 +121,68 @@ fn emulate() !void {
             setFlags_ZN(Y);
             cycles = 2;
         },
+        0xA4 => { // LDY Zero Page
+            const address = readOperands_ZeroPage();
+            Y = read(address);
+
+            setFlags_ZN(Y);
+            cycles = 3;
+        },
+        0xB4 => { // LDY Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            Y = read(address);
+
+            setFlags_ZN(Y);
+            cycles = 4;
+        },
+        0xAC => { // LDY Absolute
+            const address = readOperands_AbsAddressed();
+            Y = read(address);
+
+            setFlags_ZN(Y);
+            cycles = 4;
+        },
+        0xBC => { // LDY Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            Y = read(address);
+
+            setFlags_ZN(Y);
+        },
         0xA2 => { // LDX Immediate
             X = read(PC);
             PC += 1;
 
             setFlags_ZN(X);
             cycles = 2;
+        },
+        0xA6 => { // LDX Zero Page
+            const address = readOperands_ZeroPage();
+            X = read(address);
+
+            setFlags_ZN(X);
+            cycles = 3;
+        },
+        0xB6 => { // LDX Zero Page, X
+            const address = readOperands_ZeroPage_YIdx();
+            X = read(address);
+
+            setFlags_ZN(X);
+            cycles = 4;
+        },
+        0xAE => { // LDX Absolute
+            const address = readOperands_AbsAddressed();
+            X = read(address);
+
+            setFlags_ZN(X);
+            cycles = 4;
+        },
+        0xBE => { // LDX Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            X = read(address);
+
+            setFlags_ZN(X);
         },
         0xA9 => { // LDA Immediate
             A = read(PC);
@@ -142,6 +198,13 @@ fn emulate() !void {
             setFlags_ZN(A);
             cycles = 3;
         },
+        0xB5 => { // LDA Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            A = read(address);
+
+            setFlags_ZN(A);
+            cycles = 4;
+        },
         0xAD => { // LDA Absolute
             const address = readOperands_AbsAddressed();
             A = read(address);
@@ -149,25 +212,64 @@ fn emulate() !void {
             setFlags_ZN(A);
             cycles = 4;
         },
+        0xBD => { // LDA Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            A = read(address);
+
+            setFlags_ZN(A);
+        },
+        0xB9 => { // LDA Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            A = read(address);
+
+            setFlags_ZN(A);
+        },
         0x85 => { // STA Zero Page
             const address = readOperands_ZeroPage();
             write(address, A);
             cycles = 3;
+        },
+        0x95 => { // STA Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            write(address, A);
+            cycles = 4;
         },
         0x86 => { // STX Zero Page
             const address = readOperands_ZeroPage();
             write(address, X);
             cycles = 3;
         },
+        0x96 => { // STX Zero Page, Y
+            const address = readOperands_ZeroPage_YIdx();
+            write(address, X);
+            cycles = 4;
+        },
         0x84 => { // STY Zero Page
             const address = readOperands_ZeroPage();
             write(address, Y);
             cycles = 3;
         },
+        0x94 => { // STY Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            write(address, Y);
+            cycles = 4;
+        },
         0x8D => { // STA Absolute
             const address = readOperands_AbsAddressed();
             write(address, A);
             cycles = 4;
+        },
+        0x9D => { // STA Absolute, X
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            write(address, A);
+            cycles = 5;
+        },
+        0x99 => { // STA Absolute, Y
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            write(address, A);
+            cycles = 5;
         },
         0x8E => { // STX Absolute
             const address = readOperands_AbsAddressed();
@@ -266,20 +368,40 @@ fn emulate() !void {
             opINC(address, read(address));
             cycles = 5;
         },
+        0xF6 => { // INC Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opINC(address, read(address));
+            cycles = 6;
+        },
         0xEE => { // INC Absolute
             const address = readOperands_AbsAddressed();
             opINC(address, read(address));
             cycles = 6;
         },
+        0xFE => { // INC Absolute, X
+            cycles = 6;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opINC(address, read(address));
+        },
         0xC6 => { // DEC Zero Page
             const address = readOperands_ZeroPage();
-            opINC(address, read(address));
+            opDEC(address, read(address));
             cycles = 5;
+        },
+        0xD6 => { // DEC Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opDEC(address, read(address));
+            cycles = 6;
         },
         0xCE => { // DEC Absolute
             const address = readOperands_AbsAddressed();
-            opINC(address, read(address));
+            opDEC(address, read(address));
             cycles = 6;
+        },
+        0xDE => { // DEC Absolute, X
+            cycles = 6;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opDEC(address, read(address));
         },
         0xE8 => { // INX
             X +%= 1;
@@ -373,10 +495,20 @@ fn emulate() !void {
             opASL(address, read(address));
             cycles = 5;
         },
+        0x16 => { // ASL Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opASL(address, read(address));
+            cycles = 6;
+        },
         0x0E => { // ASL Absolute
             const address = readOperands_AbsAddressed();
             opASL(address, read(address));
             cycles = 6;
+        },
+        0x1E => { // ASL Absolute
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opASL(address, read(address));
+            cycles = 7;
         },
         0x4A => { // LSR A
             flag_carry = (A & 1) != 0;
@@ -389,10 +521,20 @@ fn emulate() !void {
             opLSR(address, read(address));
             cycles = 5;
         },
+        0x56 => { // LSR Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opLSR(address, read(address));
+            cycles = 6;
+        },
         0x4E => { // LSR Absolute
             const address = readOperands_AbsAddressed();
             opLSR(address, read(address));
             cycles = 6;
+        },
+        0x5E => { // LSR Absolute, X
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opLSR(address, read(address));
+            cycles = 7;
         },
         0x2A => { // ROL A
             const new_carry = (A & 0x80) != 0;
@@ -407,10 +549,20 @@ fn emulate() !void {
             opROL(address, read(address));
             cycles = 5;
         },
+        0x36 => { // ROL Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opROL(address, read(address));
+            cycles = 6;
+        },
         0x2E => { // ROL Absolute
             const address = readOperands_AbsAddressed();
             opROL(address, read(address));
             cycles = 6;
+        },
+        0x3E => { // ROL Absolute, X
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opROL(address, read(address));
+            cycles = 7;
         },
         0x6A => { // ROR A
             const new_carry = (A & 1) != 0;
@@ -425,10 +577,20 @@ fn emulate() !void {
             opROR(address, read(address));
             cycles = 5;
         },
+        0x76 => { // ROR Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opROR(address, read(address));
+            cycles = 6;
+        },
         0x6E => { // ROR Absolute
             const address = readOperands_AbsAddressed();
             opROR(address, read(address));
             cycles = 6;
+        },
+        0x7E => { // ROR Absolute, X
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opROR(address, read(address));
+            cycles = 7;
         },
         0x09 => { // ORA Immediate
             const byte = read(PC);
@@ -441,10 +603,25 @@ fn emulate() !void {
             opORA(read(address));
             cycles = 3;
         },
+        0x15 => { // ORA Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opORA(read(address));
+            cycles = 4;
+        },
         0x0D => { // ORA Absolute
             const address = readOperands_AbsAddressed();
             opORA(read(address));
             cycles = 4;
+        },
+        0x1D => { // ORA Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opORA(read(address));
+        },
+        0x19 => { // ORA Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            opORA(read(address));
         },
         0x29 => { // AND Immediate
             const byte = read(PC);
@@ -457,10 +634,25 @@ fn emulate() !void {
             opAND(read(address));
             cycles = 3;
         },
+        0x35 => { // AND Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opAND(read(address));
+            cycles = 4;
+        },
         0x2D => { // AND Absolute
             const address = readOperands_AbsAddressed();
             opAND(read(address));
             cycles = 4;
+        },
+        0x3D => { // AND Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opAND(read(address));
+        },
+        0x39 => { // AND Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            opAND(read(address));
         },
         0x49 => { // EOR Immediate
             const byte = read(PC);
@@ -473,10 +665,25 @@ fn emulate() !void {
             opEOR(read(address));
             cycles = 3;
         },
+        0x55 => { // EOR Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opEOR(read(address));
+            cycles = 4;
+        },
         0x4D => { // EOR Absolute
             const address = readOperands_AbsAddressed();
             opEOR(read(address));
             cycles = 4;
+        },
+        0x5D => { // EOR Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opEOR(read(address));
+        },
+        0x59 => { // EOR Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            opEOR(read(address));
         },
         0x69 => { // ADC Immediate
             const other = read(PC);
@@ -489,10 +696,25 @@ fn emulate() !void {
             opADC(read(address));
             cycles = 3;
         },
+        0x75 => { // ADC Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opADC(read(address));
+            cycles = 4;
+        },
         0x6D => { // ADC Absolute
             const address = readOperands_AbsAddressed();
             opADC(read(address));
             cycles = 4;
+        },
+        0x7D => { // ADC Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opADC(read(address));
+        },
+        0x79 => { // ADC Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            opADC(read(address));
         },
         0xE9 => { // SBC Immediate
             const other = read(PC);
@@ -505,10 +727,25 @@ fn emulate() !void {
             opSBC(read(address));
             cycles = 3;
         },
+        0xF5 => { // SBC Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opSBC(read(address));
+            cycles = 4;
+        },
         0xED => { // SBC Absolute
             const address = readOperands_AbsAddressed();
             opSBC(read(address));
             cycles = 4;
+        },
+        0xFD => { // SBC Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opSBC(read(address));
+        },
+        0xF9 => { // SBC Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            opSBC(read(address));
         },
         0xC9 => { // CMP Immediate
             const value = read(PC);
@@ -521,10 +758,25 @@ fn emulate() !void {
             opCMP(read(address), A);
             cycles = 3;
         },
+        0xD5 => { // CMP Zero Page, X
+            const address = readOperands_ZeroPage_XIdx();
+            opCMP(read(address), A);
+            cycles = 4;
+        },
         0xCD => { // CMP Absolute
             const address = readOperands_AbsAddressed();
             opCMP(read(address), A);
             cycles = 4;
+        },
+        0xDD => { // CMP Absolute, X
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_XIdx();
+            opCMP(read(address), A);
+        },
+        0xD9 => { // CMP Absolute, Y
+            cycles = 4;
+            const address = readOperands_AbsoluteAddressed_YIdx();
+            opCMP(read(address), A);
         },
         0xE0 => { // CPX Immediate
             const value = read(PC);
@@ -729,6 +981,20 @@ fn readOperands_ZeroPage() u16 {
     return address;
 }
 
+fn readOperands_ZeroPage_XIdx() u16 {
+    var address: u8 = read(PC);
+    PC += 1;
+    address +%= X;
+    return @as(u16, address);
+}
+
+fn readOperands_ZeroPage_YIdx() u16 {
+    var address: u8 = read(PC);
+    PC += 1;
+    address +%= Y;
+    return @as(u16, address);
+}
+
 fn readOperands_AbsAddressed() u16 {
     const low = read(PC);
     PC += 1;
@@ -737,6 +1003,36 @@ fn readOperands_AbsAddressed() u16 {
     PC += 1;
 
     return (high << 8) | low;
+}
+
+fn readOperands_AbsoluteAddressed_XIdx() u16 {
+    const low = read(PC);
+    PC += 1;
+    const high: u16 = read(PC);
+    PC += 1;
+    const address = (high << 8) | low;
+    const final_address = address + X;
+
+    if ((address & 0xFF00) != (final_address & 0xFF00)) {
+        cycles += 1;
+    }
+
+    return final_address;
+}
+
+fn readOperands_AbsoluteAddressed_YIdx() u16 {
+    const low = read(PC);
+    PC += 1;
+    const high: u16 = read(PC);
+    PC += 1;
+    const address = (high << 8) | low;
+    const final_address = address + Y;
+
+    if ((address & 0xFF00) != (final_address & 0xFF00)) {
+        cycles += 1;
+    }
+
+    return final_address;
 }
 
 fn setFlags_ZN(byte: u8) void {
