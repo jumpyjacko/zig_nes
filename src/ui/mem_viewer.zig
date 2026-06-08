@@ -38,14 +38,20 @@ pub const MemViewerWindow = struct {
         var i: usize = 0;
         while (i < ram_size) : (i += bytes_per_row) {
             var addr_buf: [10]u8 = undefined;
-            const addr_str = std.fmt.bufPrint(&addr_buf, "0x{X:0>4}", .{i}) catch "0x0000";
+            const addr_str = std.fmt.bufPrint(&addr_buf, "0x{X:0>4} ", .{i}) catch "0x0000";
 
-            var hex_buf: [48]u8 = undefined;
+            var hex_buf: [64]u8 = undefined;
             var hex_idx: usize = 0;
             var ascii_buf: [16]u8 = undefined;
 
             for (0..bytes_per_row) |j| {
                 if (i + j < ram_size) {
+                    if (j == 8) {
+                        const sep_remaining = hex_buf[hex_idx..];
+                        const sep_printed = std.fmt.bufPrint(sep_remaining, " ", .{}) catch "";
+                        hex_idx += sep_printed.len;
+                    }
+
                     const byte = MemViewerWindow.ram_ptr[i + j];
                     const remaining = hex_buf[hex_idx..];
                     const printed = std.fmt.bufPrint(remaining, "{X:0>2} ", .{byte}) catch "";
@@ -55,7 +61,7 @@ pub const MemViewerWindow = struct {
                 }
             }
 
-            const entries: [3][]const u8 = .{ addr_str, &hex_buf, &ascii_buf };
+            const entries: [3][]const u8 = .{ addr_str, hex_buf[0..hex_idx], ascii_buf[0..bytes_per_row] };
             const entry = QTreeWidgetItem.New2(main_window.AppWindow.gpa, &entries);
             tree_widget.AddTopLevelItem(entry);
         }
@@ -85,10 +91,8 @@ pub fn openMemViewer(action: QAction) callconv(.c) void {
     MemViewerWindow.tree_widget.SetColumnCount(3);
     const header = MemViewerWindow.tree_widget.Header();
     header.SetSectionResizeMode(3); // ResizeToContents
-    const headers: [3][]const u8 = .{ "", "Hex", "ASCII" };
+    const headers: [3][]const u8 = .{ "", "00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F", "ASCII" };
     MemViewerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
-    // MemViewerWindow.tree_widget.SetColumnWidth(0, 100);
-    // MemViewerWindow.tree_widget.SetColumnWidth(1, 450);
     MemViewerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(MemViewerWindow.tree_widget);
 
