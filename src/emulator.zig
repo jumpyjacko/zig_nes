@@ -226,7 +226,6 @@ fn emulate() !void {
             if (flag_negative) status |= 0b1000_0000;
 
             push(status);
-            PC += 1;
             cycles = 3;
         },
         0x28 => { // PLP
