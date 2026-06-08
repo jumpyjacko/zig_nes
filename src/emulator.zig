@@ -237,7 +237,6 @@ fn emulate() !void {
             flag_overflow = (status & 0b0100_0000) != 0;
             flag_negative = (status & 0b1000_0000) != 0;
 
-            PC += 1;
             cycles = 4;
         },
         0x20 => { // JSR
