@@ -102,14 +102,14 @@ pub fn log_trace() void {
     const opcode: u8 = emulator.read(emulator.PC);
     const disassembly = std.fmt.bufPrint(
         &buffer_1,
-        "{X:0<4}: \t{X:0<2}  {s}",
+        "{X:0>4}: \t{X:0>2}  {s}",
         .{ emulator.PC, opcode, opcode_names[opcode] },
     ) catch @panic("Failed to buf print");
 
     var buffer_2: [256]u8 = undefined;
     const registers = std.fmt.bufPrint(
         &buffer_2,
-        "A: 0x{X:0<2}  X: 0x{X:0<2}  Y: 0x{X:0<2}  SP: 0x{X:0<2}",
+        "A: 0x{X:0>2}  X: 0x{X:0>2}  Y: 0x{X:0>2}  SP: 0x{X:0>2}",
         .{ emulator.A, emulator.X, emulator.Y, emulator.SP },
     ) catch @panic("Failed to buf print");
 
