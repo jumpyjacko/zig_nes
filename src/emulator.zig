@@ -584,7 +584,7 @@ fn emulate() !void {
             if (flag_zero) status |= 0b0000_0010;
             if (flag_interupt_disable) status |= 0b0000_0100;
             if (flag_decimal) status |= 0b0000_1000;
-            status |= 0b0011_0000; // always set in PHP instruction
+            status |= 0b0011_0000;
             if (flag_overflow) status |= 0b0100_0000;
             if (flag_negative) status |= 0b1000_0000;
             push(status);
@@ -599,7 +599,7 @@ fn emulate() !void {
             flag_carry = (status & 0b0000_0001) != 0;
             flag_zero = (status & 0b0000_0010) != 0;
             flag_interupt_disable = (status & 0b0000_0100) != 0;
-            flag_decimal = (status & 0b0010_0000) != 0;
+            flag_decimal = (status & 0b0000_1000) != 0;
             flag_overflow = (status & 0b0100_0000) != 0;
             flag_negative = (status & 0b1000_0000) != 0;
 
