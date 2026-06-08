@@ -367,7 +367,9 @@ fn emulate() !void {
             cycles = 2;
         },
         0x0A => { // ASL A
-            opASL(A, read(A));
+            flag_carry = (A & 0b1000_0000) != 0;
+            A = A << 1;
+            setFlags_ZN(A);
             cycles = 2;
         },
         0x06 => { // ASL Zero Page
@@ -382,7 +384,9 @@ fn emulate() !void {
             cycles = 6;
         },
         0x4A => { // LSR A
-            opLSR(A, read(A));
+            flag_carry = (A & 1) != 0;
+            A = A >> 1;
+            setFlags_ZN(A);
             cycles = 2;
         },
         0x46 => { // LSR Zero Page
@@ -397,7 +401,11 @@ fn emulate() !void {
             cycles = 6;
         },
         0x2A => { // ROL A
-            opROL(A, read(A));
+            const new_carry = (A & 0x80) != 0;
+            A = A << 1;
+            if (flag_carry) A |= 1;
+            flag_carry = new_carry;
+            setFlags_ZN(A);
             cycles = 2;
         },
         0x26 => { // ROL Zero Page
@@ -412,7 +420,11 @@ fn emulate() !void {
             cycles = 6;
         },
         0x6A => { // ROR A
-            opROR(A, read(A));
+            const new_carry = (A & 1) != 0;
+            A = A >> 1;
+            if (flag_carry) A |= 0b1000_0000;
+            flag_carry = new_carry;
+            setFlags_ZN(A);
             cycles = 2;
         },
         0x66 => { // ROR Zero Page
