@@ -20,6 +20,21 @@ const QFont = qt6.QFont;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
+const AddressingMode = enum {
+    Implied, // No arguments (1 byte total)
+    Immediate, // 8-bit constant (#$XX)
+    ZeroPage, // 8-bit RAM address ($XX)
+    ZeroPageX, // 8-bit RAM address + X ($XX,X)
+    ZeroPageY, // 8-bit RAM address + Y ($XX,Y)
+    Absolute, // 16-bit RAM address ($XXXX)
+    AbsoluteX, // 16-bit RAM address + X ($XXXX,X)
+    AbsoluteY, // 16-bit RAM address + Y ($XXXX,Y)
+    Indirect, // 16-bit pointer pointer (($XXXX))
+    IndirectX, // Pre-indexed indirect (($XX,X))
+    IndirectY, // Post-indexed indirect (($XX),Y)
+    Relative, // 8-bit signed offset for branches
+};
+
 const opcode_names = [_][]const u8{
     "BRK", "ORA", "HLT", "SLO", "NOP", "ORA", "ASL", "SLO", "PHP", "ORA", "ASL", "ANC", "NOP", "ORA", "ASL", "SLO",
     "BPL", "ORA", "HLT", "SLO", "NOP", "ORA", "ASL", "SLO", "CLC", "ORA", "NOP", "SLO", "NOP", "ORA", "ASL", "SLO",
@@ -38,6 +53,7 @@ const opcode_names = [_][]const u8{
     "CPX", "SBC", "NOP", "ISC", "CPX", "SBC", "INC", "ISC", "INX", "SBC", "NOP", "SBC", "CPX", "SBC", "INC", "ISC",
     "BEQ", "SBC", "HLT", "ISC", "NOP", "SBC", "INC", "ISC", "SED", "SBC", "NOP", "ISC", "NOP", "SBC", "INC", "ISC",
 };
+
 const opcode_lengths = [_]u8{
     7, 2, 0, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
     2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
@@ -55,6 +71,25 @@ const opcode_lengths = [_]u8{
     2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
     2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
     2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+};
+
+const opcode_modes = [_]AddressingMode{
+    .Implied,   .IndirectX, .Implied,   .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Absolute,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageX, .ZeroPageX, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteX, .AbsoluteX,
+    .Absolute,  .IndirectX, .Implied,   .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Absolute,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageX, .ZeroPageX, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteX, .AbsoluteX,
+    .Implied,   .IndirectX, .Implied,   .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Absolute,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageX, .ZeroPageX, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteX, .AbsoluteX,
+    .Implied,   .IndirectX, .Implied,   .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Indirect,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageX, .ZeroPageX, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteX, .AbsoluteX,
+    .Immediate, .IndirectX, .Immediate, .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Absolute,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageY, .ZeroPageY, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteY, .AbsoluteY,
+    .Immediate, .IndirectX, .Immediate, .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Absolute,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageY, .ZeroPageY, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteY, .AbsoluteY,
+    .Immediate, .IndirectX, .Immediate, .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Absolute,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageX, .ZeroPageX, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteX, .AbsoluteX,
+    .Immediate, .IndirectX, .Immediate, .IndirectX, .ZeroPage,  .ZeroPage,  .ZeroPage,  .ZeroPage,  .Implied, .Immediate, .Implied, .Immediate, .Absolute,  .Absolute,  .Absolute,  .Absolute,
+    .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageX, .ZeroPageX, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteX, .AbsoluteX,
 };
 
 pub const TraceloggerWindow = struct {
@@ -120,43 +155,55 @@ pub fn log_trace() void {
     const opcode: u8 = emulator.read(emulator.PC);
     const len = opcode_lengths[opcode];
     const name = opcode_names[opcode];
+    const mode = opcode_modes[opcode];
 
     var disassembly: []const u8 = undefined;
-    
-    switch (len) {
-        1 => {
-            disassembly = std.fmt.bufPrint(
-                &buffer_1,
-                "{X:0>4}: \t{X:0>2}        {s}",
-                .{ emulator.PC, opcode, name },
-            ) catch @panic("Failed to buf print");
-        },
-        2 => {
-            const arg = emulator.read(emulator.PC + 1);
-            disassembly = std.fmt.bufPrint(
-                &buffer_1,
-                "{X:0>4}: \t{X:0>2} {X:0>2}     {s} ${X:0>2}",
-                .{ emulator.PC, opcode, arg, name, arg },
-            ) catch @panic("Failed to buf print");
-        },
-        3 => {
-            const low = emulator.read(emulator.PC + 1);
-            const high = emulator.read(emulator.PC + 2);
-            const address = (@as(u16, high) << 8) | low;
 
-            disassembly = std.fmt.bufPrint(
-                &buffer_1,
-                "{X:0>4}: \t{X:0>2} {X:0>2} {X:0>2}  {s} ${X:0>4}",
-                .{ emulator.PC, opcode, low, high, name, address },
-            ) catch @panic("Failed to buf print");
-        },
-        else => {
-            disassembly = std.fmt.bufPrint(
-                &buffer_1,
-                "{X:0>4}: \t{X:0>2}        {s} (HLT)",
-                .{ emulator.PC, opcode, name },
-            ) catch @panic("Failed to buf print");
-        },
+    if (len == 0) {
+        disassembly = std.fmt.bufPrint(
+            &buffer_1,
+            "{X:0>4}: \t{X:0>2}        {s} (HLT)",
+            .{ emulator.PC, opcode, name },
+        ) catch @panic("Failed to buf print");
+    } else {
+        const arg1 = if (len > 1) emulator.read(emulator.PC + 1) else 0;
+        const arg2 = if (len > 2) emulator.read(emulator.PC + 2) else 0;
+        const combined_address = (@as(u16, arg2) << 8) | arg1;
+
+        var hex_buf: [12]u8 = undefined;
+        const hex_dump = switch (len) {
+            1 => std.fmt.bufPrint(&hex_buf, "{X:0>2}      ", .{opcode}) catch "",
+            2 => std.fmt.bufPrint(&hex_buf, "{X:0>2} {X:0>2}   ", .{ opcode, arg1 }) catch "",
+            3 => std.fmt.bufPrint(&hex_buf, "{X:0>2} {X:0>2} {X:0>2}", .{ opcode, arg1, arg2 }) catch "",
+            else => unreachable,
+        };
+
+        // Format the syntax based on the actual addressing mode
+        var syntax_buf: [32]u8 = undefined;
+        const syntax = switch (mode) {
+            .Implied => std.fmt.bufPrint(&syntax_buf, "{s}", .{name}) catch "",
+            .Immediate => std.fmt.bufPrint(&syntax_buf, "{s} #{X:0>2}", .{ name, arg1 }) catch "",
+            .ZeroPage => std.fmt.bufPrint(&syntax_buf, "{s} <${X:0>2}", .{ name, arg1 }) catch "",
+            .ZeroPageX => std.fmt.bufPrint(&syntax_buf, "{s} <${X:0>2},X", .{ name, arg1 }) catch "",
+            .ZeroPageY => std.fmt.bufPrint(&syntax_buf, "{s} <${X:0>2},Y", .{ name, arg1 }) catch "",
+            .Absolute => std.fmt.bufPrint(&syntax_buf, "{s} ${X:0>4}", .{ name, combined_address }) catch "",
+            .AbsoluteX => std.fmt.bufPrint(&syntax_buf, "{s} ${X:0>4},X", .{ name, combined_address }) catch "",
+            .AbsoluteY => std.fmt.bufPrint(&syntax_buf, "{s} ${X:0>4},Y", .{ name, combined_address }) catch "",
+            .Indirect => std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>4})", .{ name, combined_address }) catch "",
+            .IndirectX => std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>2},X)", .{ name, arg1 }) catch "",
+            .IndirectY => std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>2}),Y", .{ name, arg1 }) catch "",
+            .Relative => label: {
+                const offset = @as(i8, @bitCast(arg1));
+                const target_pc = @as(u16, @intCast(@as(i32, @intCast(emulator.PC)) + 2 + offset));
+                break :label std.fmt.bufPrint(&syntax_buf, "{s} ${X:0>4}", .{ name, target_pc }) catch "";
+            },
+        };
+
+        disassembly = std.fmt.bufPrint(
+            &buffer_1,
+            "{X:0>4}: \t{s}  {s}",
+            .{ emulator.PC, hex_dump, syntax },
+        ) catch @panic("Failed to buf print");
     }
 
     var buffer_2: [256]u8 = undefined;
