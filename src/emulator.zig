@@ -722,16 +722,17 @@ fn opSBC(byte: u8) void {
     const sum = @as(i32, A) - @as(i32, byte) - borrow;
     const final_sum = @as(u8, @truncate(@as(u32, @bitCast(sum))));
     flag_overflow = ((A ^ byte) & (A ^ final_sum) & 0x80) != 0;
-    flag_carry = final_sum >= 0;
+    flag_carry = sum >= 0;
     A = final_sum;
 
     setFlags_ZN(A);
 }
 
 fn opCMP(byte: u8, register: u8) void {
-    flag_carry = byte < register;
+    flag_carry = byte >= register;
     flag_zero = byte == register;
-    flag_negative = (register -% byte) > 127;
+    const result = register -% byte;
+    flag_negative = (result & 0x80) != 0;
 }
 
 fn opBIT(byte: u8) void {
