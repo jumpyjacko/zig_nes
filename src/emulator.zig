@@ -289,117 +289,87 @@ fn emulate() !void {
         },
         0xE8 => { // INX
             X +%= 1;
-            PC += 1;
-
             setFlags_ZN(X);
             cycles = 2;
         },
         0xCA => { // DEX
             X -%= 1;
-            PC += 1;
-
             setFlags_ZN(X);
             cycles = 2;
         },
         0xC8 => { // INY
             Y +%= 1;
-            PC += 1;
-
             setFlags_ZN(Y);
             cycles = 2;
         },
         0x88 => { // DEY
             Y -%= 1;
-            PC += 1;
-
             setFlags_ZN(Y);
             cycles = 2;
         },
         0xAA => { // TAX
             X = A;
-            PC += 1;
-
             setFlags_ZN(X);
             cycles = 2;
         },
         0x8A => { // TXA
             A = X;
-            PC += 1;
-
             setFlags_ZN(A);
             cycles = 2;
         },
         0xA8 => { // TAY
             Y = A;
-            PC += 1;
-
             setFlags_ZN(Y);
             cycles = 2;
         },
         0x98 => { // TYA
             A = Y;
-            PC += 1;
-
             setFlags_ZN(A);
             cycles = 2;
         },
         0x9A => { // TXS
             SP = X;
-            PC += 1;
-
             // DOES NOT SET ZN
             cycles = 2;
         },
         0xBA => { // TXS
             X = SP;
-            PC += 1;
-
-            flag_zero = X == 0;
-            flag_negative = X > 0x7F;
+            setFlags_ZN(X);
             cycles = 2;
         },
         0x38 => { // SEC
             flag_carry = true;
-            PC += 1;
             cycles = 2;
         },
         0x18 => { // CLC
             flag_carry = false;
-            PC += 1;
             cycles = 2;
         },
         0xB8 => { // CLV
             flag_overflow = false;
-            PC += 1;
             cycles = 2;
         },
         0x78 => { // SEI
             flag_interupt_disable = true;
-            PC += 1;
             cycles = 2;
         },
         0x58 => { // CLI
             flag_interupt_disable = false;
-            PC += 1;
             cycles = 2;
         },
         0xF8 => { // SED
             flag_decimal = true;
-            PC += 1;
             cycles = 2;
         },
         0xD8 => { // CLD
             flag_decimal = false;
-            PC += 1;
             cycles = 2;
         },
         0xEA => { // NOP
-            PC += 1;
             cycles = 2;
         },
         0x0A => { // ASL A
             opASL(A, read(A));
-            PC += 1;
             cycles = 2;
         },
         0x06 => { // ASL Zero Page
@@ -415,7 +385,6 @@ fn emulate() !void {
         },
         0x4A => { // LSR A
             opLSR(A, read(A));
-            PC += 1;
             cycles = 2;
         },
         0x46 => { // LSR Zero Page
@@ -431,7 +400,6 @@ fn emulate() !void {
         },
         0x2A => { // ROL A
             opROL(A, read(A));
-            PC += 1;
             cycles = 2;
         },
         0x26 => { // ROL Zero Page
@@ -447,7 +415,6 @@ fn emulate() !void {
         },
         0x6A => { // ROR A
             opROR(A, read(A));
-            PC += 1;
             cycles = 2;
         },
         0x66 => { // ROR Zero Page
