@@ -67,7 +67,7 @@ pub fn openMemViewer(action: QAction) callconv(.c) void {
 
     MemViewerWindow.window = QDialog.New(main_window.AppWindow.window);
     MemViewerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
-    MemViewerWindow.window.Resize(600, 600);
+    MemViewerWindow.window.Resize(750, 600);
     MemViewerWindow.window.SetSizeGripEnabled(true);
     MemViewerWindow.window.SetWindowTitle("zig_nes - memory viewer");
 
