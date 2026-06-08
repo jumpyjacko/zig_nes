@@ -38,6 +38,24 @@ const opcode_names = [_][]const u8{
     "CPX", "SBC", "NOP", "ISC", "CPX", "SBC", "INC", "ISC", "INX", "SBC", "NOP", "SBC", "CPX", "SBC", "INC", "ISC",
     "BEQ", "SBC", "HLT", "ISC", "NOP", "SBC", "INC", "ISC", "SED", "SBC", "NOP", "ISC", "NOP", "SBC", "INC", "ISC",
 };
+const opcode_lengths = [_]u8{
+    7, 2, 0, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+    3, 2, 0, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+    1, 2, 0, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+    1, 2, 0, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
+    2, 2, 0, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
+};
 
 pub const TraceloggerWindow = struct {
     pub var window: QDialog = undefined;
@@ -89,7 +107,7 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     TraceloggerWindow.tree_widget.SetColumnCount(3);
     const headers: [3][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)" };
     TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
-    TraceloggerWindow.tree_widget.SetColumnWidth(0, 200);
+    TraceloggerWindow.tree_widget.SetColumnWidth(0, 300);
     TraceloggerWindow.tree_widget.SetColumnWidth(1, 350);
     TraceloggerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(TraceloggerWindow.tree_widget);
@@ -100,11 +118,46 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
 pub fn log_trace() void {
     var buffer_1: [256]u8 = undefined;
     const opcode: u8 = emulator.read(emulator.PC);
-    const disassembly = std.fmt.bufPrint(
-        &buffer_1,
-        "{X:0>4}: \t{X:0>2}  {s}",
-        .{ emulator.PC, opcode, opcode_names[opcode] },
-    ) catch @panic("Failed to buf print");
+    const len = opcode_lengths[opcode];
+    const name = opcode_names[opcode];
+
+    var disassembly: []const u8 = undefined;
+    
+    switch (len) {
+        1 => {
+            disassembly = std.fmt.bufPrint(
+                &buffer_1,
+                "{X:0>4}: \t{X:0>2}        {s}",
+                .{ emulator.PC, opcode, name },
+            ) catch @panic("Failed to buf print");
+        },
+        2 => {
+            const arg = emulator.read(emulator.PC + 1);
+            disassembly = std.fmt.bufPrint(
+                &buffer_1,
+                "{X:0>4}: \t{X:0>2} {X:0>2}     {s} ${X:0>2}",
+                .{ emulator.PC, opcode, arg, name, arg },
+            ) catch @panic("Failed to buf print");
+        },
+        3 => {
+            const low = emulator.read(emulator.PC + 1);
+            const high = emulator.read(emulator.PC + 2);
+            const address = (@as(u16, high) << 8) | low;
+
+            disassembly = std.fmt.bufPrint(
+                &buffer_1,
+                "{X:0>4}: \t{X:0>2} {X:0>2} {X:0>2}  {s} ${X:0>4}",
+                .{ emulator.PC, opcode, low, high, name, address },
+            ) catch @panic("Failed to buf print");
+        },
+        else => {
+            disassembly = std.fmt.bufPrint(
+                &buffer_1,
+                "{X:0>4}: \t{X:0>2}        {s} (HLT)",
+                .{ emulator.PC, opcode, name },
+            ) catch @panic("Failed to buf print");
+        },
+    }
 
     var buffer_2: [256]u8 = undefined;
     const registers = std.fmt.bufPrint(
@@ -124,7 +177,7 @@ pub fn log_trace() void {
             (if (emulator.flag_interupt_disable) "I" else "-"),
             (if (emulator.flag_zero) "Z" else "-"),
             (if (emulator.flag_carry) "C" else "-"),
-    },
+        },
     ) catch @panic("Failed to buf print");
 
     TraceloggerWindow.addEntry(disassembly, registers, processor_flags);
