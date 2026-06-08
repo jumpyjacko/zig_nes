@@ -79,6 +79,11 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     try reader.interface.readSliceAll(&HEADER);
     try reader.interface.readSliceAll(&ROM);
 
+    A = 0;
+    X = 0;
+    Y = 0;
+    SP = 0;
+
     const PC_low = read(0xFFFC);
     const PC_high = read(0xFFFD);
 
