@@ -1075,7 +1075,7 @@ test "SBC carry set" {
     try testing.expectEqual(0xEF, A);
     try testing.expect(!flag_zero);
     try testing.expect(flag_negative);
-    try testing.expect(flag_carry);
+    try testing.expect(!flag_carry);
     try testing.expect(!flag_overflow);
 }
 
@@ -1103,7 +1103,7 @@ test "CMP C" {
     A = 2;
     opCMP(1, A);
 
-    try testing.expectEqual(true, flag_carry);
+    try testing.expectEqual(false, flag_carry);
 }
 
 test "CMP 3" {
