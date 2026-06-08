@@ -45,7 +45,7 @@ pub fn read(address: u16) u8 {
     return 0; // i don't know what to do here
 }
 
-fn write(address: u16, value: u8) !void {
+fn write(address: u16, value: u8) void {
     if (address >= 0x8000) return;
 
     if (address <= 0x1FFF) {
@@ -55,7 +55,7 @@ fn write(address: u16, value: u8) !void {
 }
 
 fn push(value: u8) void {
-    try write(@as(u16, (@as(u16, 0x100) + SP)), value);
+    write(@as(u16, (@as(u16, 0x100) + SP)), value);
     SP -%= 1;
 }
 
@@ -151,34 +151,34 @@ fn emulate() !void {
         0x85 => { // STA Zero Page
             const address = read(PC);
             PC += 1;
-            try write(address, A);
+            write(address, A);
             cycles = 3;
         },
         0x86 => { // STX Zero Page
             const address = read(PC);
             PC += 1;
-            try write(address, X);
+            write(address, X);
             cycles = 3;
         },
         0x84 => { // STY Zero Page
             const address = read(PC);
             PC += 1;
-            try write(address, Y);
+            write(address, Y);
             cycles = 3;
         },
         0x8D => { // STA Absolute
             const address = readOperands_AbsAddressed();
-            try write(address, A);
+            write(address, A);
             cycles = 4;
         },
         0x8E => { // STX Absolute
             const address = readOperands_AbsAddressed();
-            try write(address, X);
+            write(address, X);
             cycles = 4;
         },
         0x8C => { // STY Absolute
             const address = readOperands_AbsAddressed();
-            try write(address, Y);
+            write(address, Y);
             cycles = 4;
         },
         0x10 => { // BPL
@@ -631,13 +631,13 @@ fn opBranch(condition: bool) void {
 
 fn opINC(address: u16, value: u8) void {
     const result: u8 = value +% 1;
-    try write(address, result);
+    write(address, result);
     setFlags_ZN(result);
 }
 
 fn opDEC(address: u16, value: u8) void {
     const result: u8 = value -% 1;
-    try write(address, result);
+    write(address, result);
     setFlags_ZN(result);
 }
 
@@ -645,7 +645,7 @@ fn opASL(address: u16, value: u8) void {
     flag_carry = (value & 0b1000_0000) != 0;
     const result = value << 1;
 
-    try write(address, result);
+    write(address, result);
     setFlags_ZN(result);
 }
 
@@ -653,7 +653,7 @@ fn opLSR(address: u16, value: u8) void {
     flag_carry = (value & 1) != 0;
     const result = value >> 1;
 
-    try write(address, result);
+    write(address, result);
     setFlags_ZN(result);
 }
 
@@ -663,7 +663,7 @@ fn opROL(address: u16, value: u8) void {
     var result = value << 1;
     if (flag_carry) result |= 1;
 
-    try write(address, result);
+    write(address, result);
     flag_carry = new_carry;
     setFlags_ZN(result);
 }
@@ -674,7 +674,7 @@ fn opROR(address: u16, value: u8) void {
     var result = value >> 1;
     if (flag_carry) result |= 0b1000_0000;
 
-    try write(address, result);
+    write(address, result);
     flag_carry = new_carry;
     setFlags_ZN(result);
 }
@@ -764,7 +764,7 @@ test "write() ram" {
     RAM[0] = 0x01;
     try testing.expectEqual(0x01, RAM[0]);
 
-    try write(0x0000, 0x02);
+    write(0x0000, 0x02);
     try testing.expectEqual(0x02, RAM[0]);
 }
 
@@ -772,7 +772,7 @@ test "write() rom" {
     ROM[0] = 0x01;
     try testing.expectEqual(0x01, ROM[0]);
 
-    try write(0x8000, 0x02);
+    write(0x8000, 0x02);
     try testing.expectEqual(0x01, ROM[0]);
 }
 
