@@ -378,7 +378,7 @@ fn emulate() !void {
             const address = read(PC);
             PC += 1;
             opASL(address, read(address));
-            cycles = 6;
+            cycles = 5;
         },
         0x0E => { // ASL Absolute
             const address = readOperands_AbsAddressed();
@@ -395,7 +395,7 @@ fn emulate() !void {
             const address = read(PC);
             PC += 1;
             opLSR(address, read(address));
-            cycles = 6;
+            cycles = 5;
         },
         0x4E => { // LSR Absolute
             const address = readOperands_AbsAddressed();
@@ -414,7 +414,7 @@ fn emulate() !void {
             const address = read(PC);
             PC += 1;
             opROL(address, read(address));
-            cycles = 6;
+            cycles = 5;
         },
         0x2E => { // ROL Absolute
             const address = readOperands_AbsAddressed();
@@ -433,7 +433,7 @@ fn emulate() !void {
             const address = read(PC);
             PC += 1;
             opROR(address, read(address));
-            cycles = 6;
+            cycles = 5;
         },
         0x6E => { // ROR Absolute
             const address = readOperands_AbsAddressed();
