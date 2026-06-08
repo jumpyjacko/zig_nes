@@ -108,7 +108,7 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     const headers: [3][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)" };
     TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
     TraceloggerWindow.tree_widget.SetColumnWidth(0, 300);
-    TraceloggerWindow.tree_widget.SetColumnWidth(1, 350);
+    TraceloggerWindow.tree_widget.SetColumnWidth(1, 275);
     TraceloggerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(TraceloggerWindow.tree_widget);
 
@@ -162,7 +162,7 @@ pub fn log_trace() void {
     var buffer_2: [256]u8 = undefined;
     const registers = std.fmt.bufPrint(
         &buffer_2,
-        "A: 0x{X:0>2}  X: 0x{X:0>2}  Y: 0x{X:0>2}  SP: 0x{X:0>2}",
+        "A: {X:0>2}  X: {X:0>2}  Y: {X:0>2}  SP: {X:0>2}",
         .{ emulator.A, emulator.X, emulator.Y, emulator.SP },
     ) catch @panic("Failed to buf print");
 
