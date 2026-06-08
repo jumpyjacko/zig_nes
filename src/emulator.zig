@@ -136,8 +136,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0xA5 => { // LDA Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             A = read(address);
 
             setFlags_ZN(A);
@@ -151,20 +150,17 @@ fn emulate() !void {
             cycles = 4;
         },
         0x85 => { // STA Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             write(address, A);
             cycles = 3;
         },
         0x86 => { // STX Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             write(address, X);
             cycles = 3;
         },
         0x84 => { // STY Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             write(address, Y);
             cycles = 3;
         },
@@ -266,8 +262,7 @@ fn emulate() !void {
             cycles = 3;
         },
         0xE6 => { // INC Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opINC(address, read(address));
             cycles = 5;
         },
@@ -277,8 +272,7 @@ fn emulate() !void {
             cycles = 6;
         },
         0xC6 => { // DEC Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opINC(address, read(address));
             cycles = 5;
         },
@@ -375,8 +369,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x06 => { // ASL Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opASL(address, read(address));
             cycles = 5;
         },
@@ -392,8 +385,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x46 => { // LSR Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opLSR(address, read(address));
             cycles = 5;
         },
@@ -411,8 +403,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x26 => { // ROL Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opROL(address, read(address));
             cycles = 5;
         },
@@ -430,8 +421,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x66 => { // ROR Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opROR(address, read(address));
             cycles = 5;
         },
@@ -447,8 +437,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x05 => { // ORA Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opORA(read(address));
             cycles = 3;
         },
@@ -464,8 +453,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x25 => { // AND Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opAND(read(address));
             cycles = 3;
         },
@@ -481,8 +469,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x45 => { // EOR Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opEOR(read(address));
             cycles = 3;
         },
@@ -498,8 +485,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0x65 => { // ADC Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opADC(read(address));
             cycles = 3;
         },
@@ -515,8 +501,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0xE5 => { // SBC Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opSBC(read(address));
             cycles = 3;
         },
@@ -532,8 +517,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0xC5 => { // CMP Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opCMP(read(address), A);
             cycles = 3;
         },
@@ -549,8 +533,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0xE4 => { // CPX Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opCMP(read(address), X);
             cycles = 3;
         },
@@ -566,8 +549,7 @@ fn emulate() !void {
             cycles = 2;
         },
         0xC4 => { // CPY Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opCMP(read(address), Y);
             cycles = 3;
         },
@@ -577,8 +559,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0x24 => { // BIT Zero Page
-            const address = read(PC);
-            PC += 1;
+            const address = readOperands_ZeroPage();
             opBIT(read(address));
             cycles = 3;
         },
@@ -739,6 +720,13 @@ fn opBIT(byte: u8) void {
     flag_zero = (A & byte) == 0;
     flag_negative = (byte & 0x80) != 0;
     flag_overflow = (byte & 0x40) != 0;
+}
+
+fn readOperands_ZeroPage() u16 {
+    const address = read(PC);
+    PC += 1;
+
+    return address;
 }
 
 fn readOperands_AbsAddressed() u16 {
