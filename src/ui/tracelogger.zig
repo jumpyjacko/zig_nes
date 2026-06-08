@@ -97,8 +97,8 @@ pub const TraceloggerWindow = struct {
     pub var tree_widget: QTreeWidget = undefined;
     pub var logging_enabled: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
-    fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8) void {
-        const entries: [3][]const u8 = .{ disassembly, registers, processor_flags };
+    fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
+        const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
         const entry = QTreeWidgetItem.New2(main_window.AppWindow.gpa, &entries);
         tree_widget.AddTopLevelItem(entry);
     }
@@ -139,8 +139,8 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     const mono_font = QFont.New2("monospace");
 
     TraceloggerWindow.tree_widget = QTreeWidget.New2();
-    TraceloggerWindow.tree_widget.SetColumnCount(3);
-    const headers: [3][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)" };
+    TraceloggerWindow.tree_widget.SetColumnCount(4);
+    const headers: [4][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)", "Cycle" };
     TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
     TraceloggerWindow.tree_widget.SetColumnWidth(0, 300);
     TraceloggerWindow.tree_widget.SetColumnWidth(1, 275);
@@ -227,5 +227,10 @@ pub fn log_trace() void {
         },
     ) catch @panic("Failed to buf print");
 
-    TraceloggerWindow.addEntry(disassembly, registers, processor_flags);
+    const cycle = std.fmt.allocPrint(main_window.AppWindow.gpa, "{d}", .{emulator.total_cycles}) catch {
+        return;
+    };
+    defer main_window.AppWindow.gpa.free(cycle);
+
+    TraceloggerWindow.addEntry(disassembly, registers, processor_flags, cycle);
 }

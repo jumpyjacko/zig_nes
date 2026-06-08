@@ -24,6 +24,7 @@ pub var flag_negative: bool = false;
 
 pub var CPU_Halted: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 pub var cycles: usize = 0;
+pub var total_cycles: usize = 0;
 
 pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     std.log.info("File path loaded: {s}", .{path});
@@ -89,12 +90,15 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 
     flag_interupt_disable = true;
     SP = 0xFD;
+
+    total_cycles = 7;
     try run();
 }
 
 pub fn run() !void {
     while (!CPU_Halted.load(.monotonic)) {
         try emulate();
+        total_cycles += cycles;
 
         if (tracelogger.TraceloggerWindow.logging_enabled.load(.monotonic)) {
             tracelogger.log_trace();
