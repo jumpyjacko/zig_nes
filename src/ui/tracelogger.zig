@@ -120,7 +120,7 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
 
     TraceloggerWindow.window = QDialog.New(main_window.AppWindow.window);
     TraceloggerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
-    TraceloggerWindow.window.Resize(750, 800);
+    TraceloggerWindow.window.Resize(820, 800);
     TraceloggerWindow.window.SetSizeGripEnabled(true);
     TraceloggerWindow.window.SetWindowTitle("zig_nes - tracelogger");
 
@@ -144,6 +144,8 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
     TraceloggerWindow.tree_widget.SetColumnWidth(0, 300);
     TraceloggerWindow.tree_widget.SetColumnWidth(1, 275);
+    TraceloggerWindow.tree_widget.SetColumnWidth(2, 150);
+    TraceloggerWindow.tree_widget.SetColumnWidth(3, 50);
     TraceloggerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(TraceloggerWindow.tree_widget);
 
