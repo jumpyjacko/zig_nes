@@ -177,7 +177,7 @@ pub fn log_trace() void {
             1 => std.fmt.bufPrint(&hex_buf, "{X:0>2}      ", .{opcode}) catch "",
             2 => std.fmt.bufPrint(&hex_buf, "{X:0>2} {X:0>2}   ", .{ opcode, arg1 }) catch "",
             3 => std.fmt.bufPrint(&hex_buf, "{X:0>2} {X:0>2} {X:0>2}", .{ opcode, arg1, arg2 }) catch "",
-            else => unreachable,
+            else => std.fmt.bufPrint(&hex_buf, "{X:0>2}      ", .{opcode}) catch "",
         };
 
         // Format the syntax based on the actual addressing mode
