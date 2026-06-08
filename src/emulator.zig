@@ -231,11 +231,11 @@ fn emulate() !void {
         0x28 => { // PLP
             const status = pull();
             flag_carry = (status & 0b0000_0001) != 0;
-            flag_zero = (status & 0b0000_0001) != 0;
-            flag_interupt_disable = (status & 0b0000_0001) != 0;
-            flag_decimal = (status & 0b0000_0001) != 0;
-            flag_overflow = (status & 0b0000_0001) != 0;
-            flag_negative = (status & 0b0000_0001) != 0;
+            flag_zero = (status & 0b0000_0010) != 0;
+            flag_interupt_disable = (status & 0b0000_0100) != 0;
+            flag_decimal = (status & 0b0000_1000) != 0;
+            flag_overflow = (status & 0b0100_0000) != 0;
+            flag_negative = (status & 0b1000_0000) != 0;
 
             PC += 1;
             cycles = 4;
