@@ -67,9 +67,7 @@ fn pull() u8 {
 pub fn reset(io: std.Io, path: []const u8) !void {
     if (path.len == 0) return error.NoFile;
 
-    var file = try std.Io.Dir.cwd().openFile(io, path, .{
-        .mode = .read_only
-    });
+    var file = try std.Io.Dir.cwd().openFile(io, path, .{ .mode = .read_only });
     defer file.close(io);
 
     var buf: [4096]u8 = undefined;
