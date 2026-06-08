@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const tracelogger = @import("ui/tracelogger.zig");
+const mem_viewer = @import("ui/mem_viewer.zig");
 
 pub var PC: u16 = undefined;
 pub var A: u8 = undefined;
@@ -74,6 +75,7 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     var buf: [4096]u8 = undefined;
     var reader = file.reader(io, &buf);
 
+    @memset(&RAM, 0);
     try reader.interface.readSliceAll(&HEADER);
     try reader.interface.readSliceAll(&ROM);
 
