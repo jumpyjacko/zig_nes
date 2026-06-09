@@ -62,7 +62,7 @@ pub const MemViewerWindow = struct {
             }
 
             const entries: [3][]const u8 = .{ addr_str, hex_buf[0..hex_idx], ascii_buf[0..bytes_per_row] };
-            const entry = QTreeWidgetItem.New2(main_window.AppWindow.gpa, &entries);
+            const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
             tree_widget.AddTopLevelItem(entry);
         }
     }
@@ -71,7 +71,7 @@ pub const MemViewerWindow = struct {
 pub fn openMemViewer(action: QAction) callconv(.c) void {
     _ = action;
 
-    MemViewerWindow.window = QWidget.New(main_window.AppWindow.window);
+    MemViewerWindow.window = QWidget.New(main_window.window);
     MemViewerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
     MemViewerWindow.window.Resize(750, 600);
     MemViewerWindow.window.SetWindowTitle("zig_nes - memory viewer");
@@ -92,7 +92,7 @@ pub fn openMemViewer(action: QAction) callconv(.c) void {
     const header = MemViewerWindow.tree_widget.Header();
     header.SetSectionResizeMode(3); // ResizeToContents
     const headers: [3][]const u8 = .{ "", "00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F", "ASCII" };
-    MemViewerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
+    MemViewerWindow.tree_widget.SetHeaderLabels(main_window.gpa, &headers);
     MemViewerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(MemViewerWindow.tree_widget);
 

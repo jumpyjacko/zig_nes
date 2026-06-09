@@ -99,7 +99,7 @@ pub const TraceloggerWindow = struct {
 
     fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
         const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
-        const entry = QTreeWidgetItem.New2(main_window.AppWindow.gpa, &entries);
+        const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
         tree_widget.AddTopLevelItem(entry);
     }
 
@@ -123,7 +123,7 @@ pub const TraceloggerWindow = struct {
 pub fn openTracelogger(action: QAction) callconv(.c) void {
     _ = action;
 
-    TraceloggerWindow.window = QWidget.New(main_window.AppWindow.window);
+    TraceloggerWindow.window = QWidget.New(main_window.window);
     TraceloggerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
     TraceloggerWindow.window.Resize(820, 800);
     TraceloggerWindow.window.SetWindowTitle("zig_nes - tracelogger");
@@ -146,7 +146,7 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     TraceloggerWindow.tree_widget = QTreeWidget.New2();
     TraceloggerWindow.tree_widget.SetColumnCount(4);
     const headers: [4][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)", "Cycle" };
-    TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.AppWindow.gpa, &headers);
+    TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.gpa, &headers);
     TraceloggerWindow.tree_widget.SetColumnWidth(0, 300);
     TraceloggerWindow.tree_widget.SetColumnWidth(1, 275);
     TraceloggerWindow.tree_widget.SetColumnWidth(2, 150);
@@ -252,10 +252,10 @@ pub fn log_trace() void {
         },
     ) catch @panic("Failed to buf print");
 
-    const cycle = std.fmt.allocPrint(main_window.AppWindow.gpa, "{d}", .{emulator.total_cycles}) catch {
+    const cycle = std.fmt.allocPrint(main_window.gpa, "{d}", .{emulator.total_cycles}) catch {
         return;
     };
-    defer main_window.AppWindow.gpa.free(cycle);
+    defer main_window.gpa.free(cycle);
 
     TraceloggerWindow.addEntry(disassembly, registers, processor_flags, cycle);
 }
