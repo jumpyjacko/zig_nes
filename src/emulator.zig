@@ -1138,26 +1138,27 @@ fn readOperands_AbsoluteAddressed_YIdx() u16 {
 }
 
 fn readOperands_IndirectAddressed_XIdx() u16 {
-    const indirect_address: u16 = read(PC +% X);
+    const base_address = read(PC);
     PC += 1;
 
-    const address_low: u16 = read(indirect_address);
-    const address_high: u16 = read(address_low +% 1);
+    const temp = base_address +% X;
+    const address_low: u16 = read(temp);
+    const address_high: u16 = read(temp +% 1); 
+    
     const address = (address_high << 8) | address_low;
-
     return address;
 }
 
 fn readOperands_IndirectAddressed_YIdx() u16 {
-    const indirect_address: u16 = read(PC);
+    const temp = read(PC);
     PC += 1;
 
-    const address_low: u16 = read(indirect_address);
-    const address_high: u16 = read(address_low +% 1);
-    const address = (address_high << 8) | address_low;
-
-    const final_address = address +% Y;
-    if ((address & 0xFF00) != (final_address & 0xFF00)) {
+    const address_low: u16 = read(temp);
+    const address_high: u16 = read(temp +% 1);
+    const base_address = (address_high << 8) | address_low;
+    const final_address = base_address +% Y;
+    
+    if ((base_address & 0xFF00) != (final_address & 0xFF00)) {
         cycles += 1;
     }
 
