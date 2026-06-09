@@ -387,7 +387,7 @@ fn emulate() !void {
             PC = (addr_h << 8) | addr_l;
             cycles = 3;
         },
-        0x6C => { // JMP Indirect (technically incorrect implementation, see 6502.org)
+        0x6C => { // JMP Indirect
             const i_addr_l = read(PC);
             PC += 1;
             const i_addr_h: u16 = read(PC);
@@ -395,9 +395,15 @@ fn emulate() !void {
             const indirect_address = (i_addr_h << 8) | i_addr_l;
 
             const addr_l = read(indirect_address);
-            const addr_h: u16 = read(indirect_address + 1);
+            var addr_h: u16 = 0;
+            if ((indirect_address & 0x00FF) == 0x00FF) { // if on page boundary
+                addr_h = read(indirect_address & 0xFF00);
+            } else {
+                addr_h = read(indirect_address + 1);
+            }
+
             PC = (addr_h << 8) | addr_l;
-            cycles = 3;
+            cycles = 5;
         },
         0xE6 => { // INC Zero Page
             const address = readOperands_ZeroPage();
