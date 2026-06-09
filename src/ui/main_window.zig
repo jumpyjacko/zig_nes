@@ -9,7 +9,6 @@ const QApplication = qt6.QApplication;
 const QMainWindow = qt6.QMainWindow;
 const QWidget = qt6.QWidget;
 const QMenuBar = qt6.QMenuBar;
-const QMenu = qt6.QMenu;
 const QAction = qt6.QAction;
 const QKeySequence = qt6.QKeySequence;
 const QVBoxLayout = qt6.QVBoxLayout;
@@ -122,12 +121,12 @@ fn resetEmulator() void {
     if (ROM_path.len == 0) return;
 
     if (emu_thread) |thread| {
-        emulator.CPU_Halted.store(true, .monotonic);
+        emulator.CPU_halted.store(true, .monotonic);
         thread.join();
         emu_thread = null;
     }
 
-    emulator.CPU_Halted.store(false, .monotonic);
+    emulator.CPU_halted.store(false, .monotonic);
     emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
         std.log.err("Failed to spawn emulator thread: {any}", .{err});
         return;

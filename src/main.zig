@@ -8,6 +8,5 @@ pub fn main(init: std.process.Init) !void {
 }
 
 comptime { // Run included tests
-    _ = @import("ui/tracelogger.zig");
     _ = @import("emulator.zig");
 }

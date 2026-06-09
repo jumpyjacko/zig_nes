@@ -3,7 +3,7 @@ const std = @import("std");
 const tracelogger = @import("ui/tracelogger.zig");
 const mem_viewer = @import("ui/mem_viewer.zig");
 
-pub var PC: u16 = undefined;
+pub var PC: u16 = undefined; // program counter
 pub var A: u8 = undefined;
 pub var X: u8 = undefined;
 pub var Y: u8 = undefined;
@@ -22,7 +22,7 @@ pub var flag_decimal: bool = false;
 pub var flag_overflow: bool = false;
 pub var flag_negative: bool = false;
 
-pub var CPU_Halted: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
+pub var CPU_halted: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 pub var cycles: usize = 0;
 pub var total_cycles: usize = 0;
 
@@ -96,9 +96,9 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 }
 
 pub fn run() !void {
-    while (!CPU_Halted.load(.monotonic)) {
+    while (!CPU_halted.load(.monotonic)) {
         if (tracelogger.logging_enabled.load(.monotonic)) {
-            tracelogger.log_trace();
+            tracelogger.logTrace();
         }
 
         try emulate();
@@ -112,7 +112,7 @@ fn emulate() !void {
 
     switch (opcode) {
         0x02 => { // HLT
-            CPU_Halted.store(true, .monotonic);
+            CPU_halted.store(true, .monotonic);
         },
         0xA0 => { // LDY Immediate
             Y = read(PC);
@@ -1143,8 +1143,8 @@ fn readOperands_IndirectAddressed_XIdx() u16 {
 
     const temp = base_address +% X;
     const address_low: u16 = read(temp);
-    const address_high: u16 = read(temp +% 1); 
-    
+    const address_high: u16 = read(temp +% 1);
+
     const address = (address_high << 8) | address_low;
     return address;
 }
@@ -1157,7 +1157,7 @@ fn readOperands_IndirectAddressed_YIdx() u16 {
     const address_high: u16 = read(temp +% 1);
     const base_address = (address_high << 8) | address_low;
     const final_address = base_address +% Y;
-    
+
     if ((base_address & 0xFF00) != (final_address & 0xFF00)) {
         cycles += 1;
     }
