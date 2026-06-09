@@ -197,9 +197,26 @@ pub fn log_trace() void {
             .Absolute => std.fmt.bufPrint(&syntax_buf, "{s} ${X:0>4}", .{ name, combined_address }) catch "",
             .AbsoluteX => std.fmt.bufPrint(&syntax_buf, "{s} ${X:0>4},X", .{ name, combined_address }) catch "",
             .AbsoluteY => std.fmt.bufPrint(&syntax_buf, "{s} ${X:0>4},Y", .{ name, combined_address }) catch "",
-            .Indirect => std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>4})", .{ name, combined_address }) catch "",
-            .IndirectX => std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>2},X)", .{ name, arg1 }) catch "",
-            .IndirectY => std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>2}),Y", .{ name, arg1 }) catch "",
+            .Indirect => label: {
+                const low: u16 = emulator.read(combined_address);
+                const high: u16 = emulator.read(combined_address +% 1);
+                const target = (high << 8) | low;
+                break :label std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>4}) -> ${X:0>4}", .{ name, combined_address, target }) catch "";
+            },
+            .IndirectX => label: {
+                const temp = arg1 +% emulator.X;
+                const low: u16 = emulator.read(temp);
+                const high: u16 = emulator.read(temp +% 1);
+                const target = (high << 8) | low;
+                break :label std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>2},X) -> ${X:0>4}", .{ name, arg1, target }) catch "";
+            },
+            .IndirectY => label: {
+                const low: u16 = emulator.read(arg1);
+                const high: u16 = emulator.read(arg1 +% 1);
+                const base = (high << 8) | low;
+                const target = base +% emulator.Y;
+                break :label std.fmt.bufPrint(&syntax_buf, "{s} (${X:0>2}),Y -> ${X:0>4}", .{ name, arg1, target }) catch "";
+            },
             .Relative => label: {
                 const offset = @as(i8, @bitCast(arg1));
                 const target_pc = @as(u16, @intCast(@as(i32, @intCast(emulator.PC)) + 2 + offset));
