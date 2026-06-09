@@ -1058,7 +1058,7 @@ fn opSBC(byte: u8) void {
 }
 
 fn opCMP(byte: u8, register: u8) void {
-    flag_carry = byte >= register;
+    flag_carry = register >= byte;
     flag_zero = byte == register;
     const result = register -% byte;
     flag_negative = (result & 0x80) != 0;
