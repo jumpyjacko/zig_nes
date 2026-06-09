@@ -28,7 +28,7 @@ pub const MemViewerWindow = struct {
 
     fn refreshView(timer: QTimer) callconv(.c) void {
         _ = timer;
-        if (MemViewerWindow.tree_widget.ptr == null) return;
+        if (tree_widget.ptr == null) return;
 
         MemViewerWindow.tree_widget.Clear();
 
