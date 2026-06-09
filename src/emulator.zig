@@ -97,7 +97,7 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 
 pub fn run() !void {
     while (!CPU_Halted.load(.monotonic)) {
-        if (tracelogger.TraceloggerWindow.logging_enabled.load(.monotonic)) {
+        if (tracelogger.logging_enabled.load(.monotonic)) {
             tracelogger.log_trace();
         }
 

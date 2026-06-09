@@ -92,49 +92,47 @@ const opcode_modes = [_]AddressingMode{
     .Relative,  .IndirectY, .Implied,   .IndirectY, .ZeroPageX, .ZeroPageX, .ZeroPageX, .ZeroPageX, .Implied, .AbsoluteY, .Implied, .AbsoluteY, .AbsoluteX, .AbsoluteX, .AbsoluteX, .AbsoluteX,
 };
 
-pub const TraceloggerWindow = struct {
-    pub var window: QWidget = undefined;
-    pub var tree_widget: QTreeWidget = undefined;
-    pub var logging_enabled: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
+pub var window: QWidget = undefined;
+pub var tree_widget: QTreeWidget = undefined;
+pub var logging_enabled: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
-    fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
-        const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
-        const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
-        tree_widget.AddTopLevelItem(entry);
-    }
+fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
+    const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
+    const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
+    tree_widget.AddTopLevelItem(entry);
+}
 
-    fn checkboxClicked(checkbox: QCheckBox, state: i32) callconv(.c) void {
-        _ = checkbox;
-        if (state == 0) {
-            logging_enabled.store(false, .monotonic);
-        } else {
-            logging_enabled.store(true, .monotonic);
-        }
-
-        std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled.load(.monotonic)});
-    }
-
-    fn windowClose(widget: QWidget) callconv(.c) void {
-        _ = widget;
+fn checkboxClicked(checkbox: QCheckBox, state: i32) callconv(.c) void {
+    _ = checkbox;
+    if (state == 0) {
         logging_enabled.store(false, .monotonic);
+    } else {
+        logging_enabled.store(true, .monotonic);
     }
-};
+
+    std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled.load(.monotonic)});
+}
+
+fn windowClose(widget: QWidget) callconv(.c) void {
+    _ = widget;
+    logging_enabled.store(false, .monotonic);
+}
 
 pub fn openTracelogger(action: QAction) callconv(.c) void {
     _ = action;
 
-    TraceloggerWindow.window = QWidget.New(main_window.window);
-    TraceloggerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
-    TraceloggerWindow.window.Resize(820, 800);
-    TraceloggerWindow.window.SetWindowTitle("zig_nes - tracelogger");
-    TraceloggerWindow.window.SetWindowFlags(qnamespace_enums.WindowType.Window | qnamespace_enums.WindowType.WindowMinMaxButtonsHint | qnamespace_enums.WindowType.WindowCloseButtonHint);
+    window = QWidget.New(main_window.window);
+    window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
+    window.Resize(820, 800);
+    window.SetWindowTitle("zig_nes - tracelogger");
+    window.SetWindowFlags(qnamespace_enums.WindowType.Window | qnamespace_enums.WindowType.WindowMinMaxButtonsHint | qnamespace_enums.WindowType.WindowCloseButtonHint);
 
-    const layout = QVBoxLayout.New(TraceloggerWindow.window);
+    const layout = QVBoxLayout.New(window);
     const top_layout = QHBoxLayout.New2();
     const label = QLabel.New3("Tracelogger");
     const logging_checkbox = QCheckBox.New3("Enable logging");
     logging_checkbox.SetLayoutDirection(qnamespace_enums.LayoutDirection.RightToLeft);
-    logging_checkbox.OnStateChanged(TraceloggerWindow.checkboxClicked);
+    logging_checkbox.OnStateChanged(checkboxClicked);
 
     top_layout.AddWidget(label);
     top_layout.AddStretch();
@@ -143,19 +141,19 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
 
     const mono_font = QFont.New2("monospace");
 
-    TraceloggerWindow.tree_widget = QTreeWidget.New2();
-    TraceloggerWindow.tree_widget.SetColumnCount(4);
+    tree_widget = QTreeWidget.New2();
+    tree_widget.SetColumnCount(4);
     const headers: [4][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)", "Cycle" };
-    TraceloggerWindow.tree_widget.SetHeaderLabels(main_window.gpa, &headers);
-    TraceloggerWindow.tree_widget.SetColumnWidth(0, 300);
-    TraceloggerWindow.tree_widget.SetColumnWidth(1, 275);
-    TraceloggerWindow.tree_widget.SetColumnWidth(2, 150);
-    TraceloggerWindow.tree_widget.SetColumnWidth(3, 50);
-    TraceloggerWindow.tree_widget.SetFont(mono_font);
-    layout.AddWidget(TraceloggerWindow.tree_widget);
+    tree_widget.SetHeaderLabels(main_window.gpa, &headers);
+    tree_widget.SetColumnWidth(0, 300);
+    tree_widget.SetColumnWidth(1, 275);
+    tree_widget.SetColumnWidth(2, 150);
+    tree_widget.SetColumnWidth(3, 50);
+    tree_widget.SetFont(mono_font);
+    layout.AddWidget(tree_widget);
 
-    TraceloggerWindow.window.OnDestroyed(TraceloggerWindow.windowClose);
-    TraceloggerWindow.window.Show();
+    window.OnDestroyed(windowClose);
+    window.Show();
 }
 
 pub fn log_trace() void {
@@ -257,5 +255,5 @@ pub fn log_trace() void {
     };
     defer main_window.gpa.free(cycle);
 
-    TraceloggerWindow.addEntry(disassembly, registers, processor_flags, cycle);
+    addEntry(disassembly, registers, processor_flags, cycle);
 }
