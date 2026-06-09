@@ -96,28 +96,6 @@ pub var window: QWidget = undefined;
 pub var tree_widget: QTreeWidget = undefined;
 pub var logging_enabled: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
-fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
-    const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
-    const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
-    tree_widget.AddTopLevelItem(entry);
-}
-
-fn checkboxClicked(checkbox: QCheckBox, state: i32) callconv(.c) void {
-    _ = checkbox;
-    if (state == 0) {
-        logging_enabled.store(false, .monotonic);
-    } else {
-        logging_enabled.store(true, .monotonic);
-    }
-
-    std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled.load(.monotonic)});
-}
-
-fn windowClose(widget: QWidget) callconv(.c) void {
-    _ = widget;
-    logging_enabled.store(false, .monotonic);
-}
-
 pub fn openTracelogger(action: QAction) callconv(.c) void {
     _ = action;
 
@@ -256,4 +234,26 @@ pub fn log_trace() void {
     defer main_window.gpa.free(cycle);
 
     addEntry(disassembly, registers, processor_flags, cycle);
+}
+
+fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
+    const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
+    const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
+    tree_widget.AddTopLevelItem(entry);
+}
+
+fn checkboxClicked(checkbox: QCheckBox, state: i32) callconv(.c) void {
+    _ = checkbox;
+    if (state == 0) {
+        logging_enabled.store(false, .monotonic);
+    } else {
+        logging_enabled.store(true, .monotonic);
+    }
+
+    std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled.load(.monotonic)});
+}
+
+fn windowClose(widget: QWidget) callconv(.c) void {
+    _ = widget;
+    logging_enabled.store(false, .monotonic);
 }

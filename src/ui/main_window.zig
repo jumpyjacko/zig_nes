@@ -24,62 +24,6 @@ pub var io: std.Io = undefined;
 var ROM_path: []const u8 = "";
 var emu_thread: ?std.Thread = null;
 
-fn exit_window(action: QAction) callconv(.c) void {
-    _ = action;
-    _ = window.Close();
-}
-
-fn load_rom(action: QAction) callconv(.c) void {
-    _ = action;
-
-    const file_path = QFileDialog.GetOpenFileName4(
-        gpa,
-        window,
-        "Open ROM File",
-        "",
-        "NES ROMs (*.nes);;All Files (*)",
-    );
-    defer gpa.free(file_path);
-
-    if (file_path.len > 0) {
-        if (ROM_path.len > 0) {
-            gpa.free(ROM_path);
-        }
-        ROM_path = gpa.dupe(u8, file_path) catch {
-            return;
-        };
-
-        resetEmulator();
-    }
-}
-
-fn resetActionWrapper(action: QAction) callconv(.c) void {
-    _ = action;
-    resetEmulator();
-}
-
-fn resetEmulator() void {
-    if (ROM_path.len == 0) return;
-
-    if (emu_thread) |thread| {
-        emulator.CPU_Halted.store(true, .monotonic);
-        thread.join();
-        emu_thread = null;
-    }
-
-    emulator.CPU_Halted.store(false, .monotonic);
-    emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
-        std.log.err("Failed to spawn emulator thread: {any}", .{err});
-        return;
-    };
-}
-
-fn freeROMPath() void {
-    if (ROM_path.len > 0) {
-        gpa.free(ROM_path);
-    }
-}
-
 pub fn initQtApplication(init: std.process.Init) !void {
     const argv = try qt6.init(init.gpa, init.minimal.args);
     defer qt6.deinit(init.gpa, argv);
@@ -138,4 +82,60 @@ pub fn initQtApplication(init: std.process.Init) !void {
     window.Show();
 
     _ = QApplication.Exec();
+}
+
+fn exit_window(action: QAction) callconv(.c) void {
+    _ = action;
+    _ = window.Close();
+}
+
+fn load_rom(action: QAction) callconv(.c) void {
+    _ = action;
+
+    const file_path = QFileDialog.GetOpenFileName4(
+        gpa,
+        window,
+        "Open ROM File",
+        "",
+        "NES ROMs (*.nes);;All Files (*)",
+    );
+    defer gpa.free(file_path);
+
+    if (file_path.len > 0) {
+        if (ROM_path.len > 0) {
+            gpa.free(ROM_path);
+        }
+        ROM_path = gpa.dupe(u8, file_path) catch {
+            return;
+        };
+
+        resetEmulator();
+    }
+}
+
+fn resetActionWrapper(action: QAction) callconv(.c) void {
+    _ = action;
+    resetEmulator();
+}
+
+fn resetEmulator() void {
+    if (ROM_path.len == 0) return;
+
+    if (emu_thread) |thread| {
+        emulator.CPU_Halted.store(true, .monotonic);
+        thread.join();
+        emu_thread = null;
+    }
+
+    emulator.CPU_Halted.store(false, .monotonic);
+    emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
+        std.log.err("Failed to spawn emulator thread: {any}", .{err});
+        return;
+    };
+}
+
+fn freeROMPath() void {
+    if (ROM_path.len > 0) {
+        gpa.free(ROM_path);
+    }
 }
