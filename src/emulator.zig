@@ -97,12 +97,12 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 
 pub fn run() !void {
     while (!CPU_Halted.load(.monotonic)) {
-        try emulate();
-        total_cycles += cycles;
-
         if (tracelogger.TraceloggerWindow.logging_enabled.load(.monotonic)) {
             tracelogger.log_trace();
         }
+
+        try emulate();
+        total_cycles += cycles;
     }
 }
 
