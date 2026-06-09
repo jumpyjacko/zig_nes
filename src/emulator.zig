@@ -136,7 +136,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0xAC => { // LDY Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             Y = read(address);
 
             setFlags_ZN(Y);
@@ -171,7 +171,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0xAE => { // LDX Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             X = read(address);
 
             setFlags_ZN(X);
@@ -206,7 +206,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0xAD => { // LDA Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             A = read(address);
 
             setFlags_ZN(A);
@@ -257,7 +257,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0x8D => { // STA Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             write(address, A);
             cycles = 4;
         },
@@ -272,12 +272,12 @@ fn emulate() !void {
             cycles = 5;
         },
         0x8E => { // STX Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             write(address, X);
             cycles = 4;
         },
         0x8C => { // STY Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             write(address, Y);
             cycles = 4;
         },
@@ -386,7 +386,7 @@ fn emulate() !void {
             cycles = 6;
         },
         0xEE => { // INC Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opINC(address, read(address));
             cycles = 6;
         },
@@ -406,7 +406,7 @@ fn emulate() !void {
             cycles = 6;
         },
         0xCE => { // DEC Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opDEC(address, read(address));
             cycles = 6;
         },
@@ -513,7 +513,7 @@ fn emulate() !void {
             cycles = 6;
         },
         0x0E => { // ASL Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opASL(address, read(address));
             cycles = 6;
         },
@@ -539,7 +539,7 @@ fn emulate() !void {
             cycles = 6;
         },
         0x4E => { // LSR Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opLSR(address, read(address));
             cycles = 6;
         },
@@ -567,7 +567,7 @@ fn emulate() !void {
             cycles = 6;
         },
         0x2E => { // ROL Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opROL(address, read(address));
             cycles = 6;
         },
@@ -595,7 +595,7 @@ fn emulate() !void {
             cycles = 6;
         },
         0x6E => { // ROR Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opROR(address, read(address));
             cycles = 6;
         },
@@ -621,7 +621,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0x0D => { // ORA Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opORA(read(address));
             cycles = 4;
         },
@@ -652,7 +652,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0x2D => { // AND Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opAND(read(address));
             cycles = 4;
         },
@@ -683,7 +683,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0x4D => { // EOR Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opEOR(read(address));
             cycles = 4;
         },
@@ -714,7 +714,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0x6D => { // ADC Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opADC(read(address));
             cycles = 4;
         },
@@ -745,7 +745,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0xED => { // SBC Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opSBC(read(address));
             cycles = 4;
         },
@@ -776,7 +776,7 @@ fn emulate() !void {
             cycles = 4;
         },
         0xCD => { // CMP Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opCMP(read(address), A);
             cycles = 4;
         },
@@ -802,7 +802,7 @@ fn emulate() !void {
             cycles = 3;
         },
         0xEC => { // CPX Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opCMP(read(address), X);
             cycles = 4;
         },
@@ -818,7 +818,7 @@ fn emulate() !void {
             cycles = 3;
         },
         0xCC => { // CPY Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opCMP(read(address), Y);
             cycles = 4;
         },
@@ -828,7 +828,7 @@ fn emulate() !void {
             cycles = 3;
         },
         0x2C => { // BIT Absolute
-            const address = readOperands_AbsAddressed();
+            const address = readOperands_AbsoluteAddressed();
             opBIT(read(address));
             cycles = 4;
         },
@@ -1007,7 +1007,7 @@ fn readOperands_ZeroPage_YIdx() u16 {
     return @as(u16, address);
 }
 
-fn readOperands_AbsAddressed() u16 {
+fn readOperands_AbsoluteAddressed() u16 {
     const low = read(PC);
     PC += 1;
 
@@ -1126,7 +1126,7 @@ test "readOperands_AbsAddressed()" {
     ROM[1] = 0x08;
     ROM[2] = 0x80;
 
-    const address = readOperands_AbsAddressed();
+    const address = readOperands_AbsoluteAddressed();
 
     try testing.expectEqual(@as(u16, 0x8008), address);
     try testing.expectEqual(@as(u16, 0x8003), PC);
