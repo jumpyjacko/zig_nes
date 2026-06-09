@@ -44,6 +44,7 @@ pub fn build(b: *std.Build) void {
         "qfont",
         "qtimer",
         "qheaderview",
+        "qobject"
     };
 
     for (qtlibs) |lib| {

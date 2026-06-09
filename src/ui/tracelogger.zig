@@ -93,7 +93,7 @@ const opcode_modes = [_]AddressingMode{
 };
 
 pub const TraceloggerWindow = struct {
-    pub var window: QDialog = undefined;
+    pub var window: QWidget = undefined;
     pub var tree_widget: QTreeWidget = undefined;
     pub var logging_enabled: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
@@ -114,9 +114,8 @@ pub const TraceloggerWindow = struct {
         std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled.load(.monotonic)});
     }
 
-    fn windowClose(dialog: QDialog, idk: i32) callconv(.c) void {
-        _ = dialog;
-        _ = idk;
+    fn windowClose(widget: QWidget) callconv(.c) void {
+        _ = widget;
         logging_enabled.store(false, .monotonic);
     }
 };
@@ -124,11 +123,11 @@ pub const TraceloggerWindow = struct {
 pub fn openTracelogger(action: QAction) callconv(.c) void {
     _ = action;
 
-    TraceloggerWindow.window = QDialog.New(main_window.AppWindow.window);
+    TraceloggerWindow.window = QWidget.New(main_window.AppWindow.window);
     TraceloggerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
     TraceloggerWindow.window.Resize(820, 800);
-    TraceloggerWindow.window.SetSizeGripEnabled(true);
     TraceloggerWindow.window.SetWindowTitle("zig_nes - tracelogger");
+    TraceloggerWindow.window.SetWindowFlags(qnamespace_enums.WindowType.Window | qnamespace_enums.WindowType.WindowMinMaxButtonsHint | qnamespace_enums.WindowType.WindowCloseButtonHint);
 
     const layout = QVBoxLayout.New(TraceloggerWindow.window);
     const top_layout = QHBoxLayout.New2();
@@ -155,7 +154,7 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     TraceloggerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(TraceloggerWindow.tree_widget);
 
-    TraceloggerWindow.window.OnFinished(TraceloggerWindow.windowClose);
+    TraceloggerWindow.window.OnDestroyed(TraceloggerWindow.windowClose);
     TraceloggerWindow.window.Show();
 }
 
