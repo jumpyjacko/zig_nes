@@ -363,6 +363,18 @@ fn emulate() !void {
             PC = (addr_h << 8) | addr_l;
             cycles = 3;
         },
+        0x6C => { // JMP Indirect (technically incorrect implementation, see 6502.org)
+            const i_addr_l = read(PC);
+            PC += 1;
+            const i_addr_h: u16 = read(PC);
+            PC += 1;
+            const indirect_address = (i_addr_h << 8) | i_addr_l;
+
+            const addr_l = read(indirect_address);
+            const addr_h: u16 = read(indirect_address + 1);
+            PC = (addr_h << 8) | addr_l;
+            cycles = 3;
+        },
         0xE6 => { // INC Zero Page
             const address = readOperands_ZeroPage();
             opINC(address, read(address));
