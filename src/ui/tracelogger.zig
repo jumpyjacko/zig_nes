@@ -113,6 +113,12 @@ pub const TraceloggerWindow = struct {
 
         std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled.load(.monotonic)});
     }
+
+    fn windowClose(dialog: QDialog, idk: i32) callconv(.c) void {
+        _ = dialog;
+        _ = idk;
+        logging_enabled.store(false, .monotonic);
+    }
 };
 
 pub fn openTracelogger(action: QAction) callconv(.c) void {
@@ -149,6 +155,7 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     TraceloggerWindow.tree_widget.SetFont(mono_font);
     layout.AddWidget(TraceloggerWindow.tree_widget);
 
+    TraceloggerWindow.window.OnFinished(TraceloggerWindow.windowClose);
     TraceloggerWindow.window.Show();
 }
 
