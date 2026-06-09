@@ -22,7 +22,7 @@ const QTimer = qt6.QTimer;
 const qnamespace_enums = qt6.qnamespace_enums;
 
 pub const MemViewerWindow = struct {
-    pub var window: QDialog = undefined;
+    pub var window: QWidget = undefined;
     pub var tree_widget: QTreeWidget = undefined;
     pub var ram_ptr: [*]u8 = &emulator.RAM;
 
@@ -71,11 +71,11 @@ pub const MemViewerWindow = struct {
 pub fn openMemViewer(action: QAction) callconv(.c) void {
     _ = action;
 
-    MemViewerWindow.window = QDialog.New(main_window.AppWindow.window);
+    MemViewerWindow.window = QWidget.New(main_window.AppWindow.window);
     MemViewerWindow.window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
     MemViewerWindow.window.Resize(750, 600);
-    MemViewerWindow.window.SetSizeGripEnabled(true);
     MemViewerWindow.window.SetWindowTitle("zig_nes - memory viewer");
+    MemViewerWindow.window.SetWindowFlags(qnamespace_enums.WindowType.Window | qnamespace_enums.WindowType.WindowMinMaxButtonsHint | qnamespace_enums.WindowType.WindowCloseButtonHint);
 
     const update_timer = QTimer.New2(MemViewerWindow.window);
     update_timer.OnTimeout(MemViewerWindow.refreshView);
