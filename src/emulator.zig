@@ -226,6 +226,20 @@ fn emulate() !void {
 
             setFlags_ZN(A);
         },
+        0xA1 => { // LDA Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            A = read(address);
+
+            cycles = 6;
+            setFlags_ZN(A);
+        },
+        0xB1 => { // LDA Indirect, Y
+            cycles = 5;
+            const address = readOperands_IndirectAddressed_YIdx();
+            A = read(address);
+
+            setFlags_ZN(A);
+        },
         0x85 => { // STA Zero Page
             const address = readOperands_ZeroPage();
             write(address, A);
@@ -270,6 +284,16 @@ fn emulate() !void {
             const address = readOperands_AbsoluteAddressed_YIdx();
             write(address, A);
             cycles = 5;
+        },
+        0x81 => { // STA Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            write(address, A);
+            cycles = 6;
+        },
+        0x91 => { // STA Indirect, Y
+            const address = readOperands_IndirectAddressed_YIdx();
+            write(address, A);
+            cycles = 6;
         },
         0x8E => { // STX Absolute
             const address = readOperands_AbsoluteAddressed();
@@ -635,6 +659,16 @@ fn emulate() !void {
             const address = readOperands_AbsoluteAddressed_YIdx();
             opORA(read(address));
         },
+        0x01 => { // ORA Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            opORA(read(address));
+            cycles = 6;
+        },
+        0x11 => { // ORA Indirect, Y
+            cycles = 5;
+            const address = readOperands_IndirectAddressed_YIdx();
+            opORA(read(address));
+        },
         0x29 => { // AND Immediate
             const byte = read(PC);
             PC += 1;
@@ -664,6 +698,16 @@ fn emulate() !void {
         0x39 => { // AND Absolute, Y
             cycles = 4;
             const address = readOperands_AbsoluteAddressed_YIdx();
+            opAND(read(address));
+        },
+        0x21 => { // AND Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            opAND(read(address));
+            cycles = 6;
+        },
+        0x31 => { // AND Indirect, Y
+            cycles = 5;
+            const address = readOperands_IndirectAddressed_YIdx();
             opAND(read(address));
         },
         0x49 => { // EOR Immediate
@@ -697,6 +741,16 @@ fn emulate() !void {
             const address = readOperands_AbsoluteAddressed_YIdx();
             opEOR(read(address));
         },
+        0x41 => { // EOR Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            opEOR(read(address));
+            cycles = 6;
+        },
+        0x51 => { // EOR Indirect, Y
+            cycles = 5;
+            const address = readOperands_IndirectAddressed_YIdx();
+            opEOR(read(address));
+        },
         0x69 => { // ADC Immediate
             const other = read(PC);
             PC += 1;
@@ -726,6 +780,16 @@ fn emulate() !void {
         0x79 => { // ADC Absolute, Y
             cycles = 4;
             const address = readOperands_AbsoluteAddressed_YIdx();
+            opADC(read(address));
+        },
+        0x61 => { // ADC Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            opADC(read(address));
+            cycles = 6;
+        },
+        0x71 => { // ADC Indirect, Y
+            cycles = 5;
+            const address = readOperands_IndirectAddressed_YIdx();
             opADC(read(address));
         },
         0xE9 => { // SBC Immediate
@@ -759,6 +823,16 @@ fn emulate() !void {
             const address = readOperands_AbsoluteAddressed_YIdx();
             opSBC(read(address));
         },
+        0xE1 => { // SBC Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            opSBC(read(address));
+            cycles = 6;
+        },
+        0xF1 => { // SBC Indirect, Y
+            cycles = 5;
+            const address = readOperands_IndirectAddressed_YIdx();
+            opSBC(read(address));
+        },
         0xC9 => { // CMP Immediate
             const value = read(PC);
             PC += 1;
@@ -788,6 +862,16 @@ fn emulate() !void {
         0xD9 => { // CMP Absolute, Y
             cycles = 4;
             const address = readOperands_AbsoluteAddressed_YIdx();
+            opCMP(read(address), A);
+        },
+        0xC1 => { // CMP Indirect, X
+            const address = readOperands_IndirectAddressed_XIdx();
+            opCMP(read(address), A);
+            cycles = 6;
+        },
+        0xD1 => { // CMP Indirect, Y
+            cycles = 5;
+            const address = readOperands_IndirectAddressed_YIdx();
             opCMP(read(address), A);
         },
         0xE0 => { // CPX Immediate
@@ -1040,6 +1124,33 @@ fn readOperands_AbsoluteAddressed_YIdx() u16 {
     const address = (high << 8) | low;
     const final_address = address + Y;
 
+    if ((address & 0xFF00) != (final_address & 0xFF00)) {
+        cycles += 1;
+    }
+
+    return final_address;
+}
+
+fn readOperands_IndirectAddressed_XIdx() u16 {
+    const indirect_address: u16 = read(PC + X);
+    PC += 1;
+
+    const address_low: u16 = read(indirect_address);
+    const address_high: u16 = read(address_low + 1);
+    const address = (address_high << 8) | address_low;
+
+    return address;
+}
+
+fn readOperands_IndirectAddressed_YIdx() u16 {
+    const indirect_address: u16 = read(PC);
+    PC += 1;
+
+    const address_low: u16 = read(indirect_address);
+    const address_high: u16 = read(address_low + 1);
+    const address = (address_high << 8) | address_low;
+
+    const final_address = address + Y;
     if ((address & 0xFF00) != (final_address & 0xFF00)) {
         cycles += 1;
     }
