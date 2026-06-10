@@ -15,7 +15,7 @@ const QImage = qt6.QImage;
 const qnamespace_enums = qt6.qnamespace_enums;
 
 pub var window: QWidget = undefined;
-pub var rom_ptr: [*]u8 = &emulator.CHR_ROM;
+pub var rom_ptr: [*]u8 = &emulator.CHR_DATA;
 
 const width: comptime_int = 256;
 const height: comptime_int = 128;

@@ -13,7 +13,9 @@ pub var SP: u8 = undefined; // stack pointer
 
 pub var RAM: [0x800]u8 = undefined;
 pub var ROM: [0x8000]u8 = undefined;
-pub var CHR_ROM: [0x2000]u8 = undefined;
+pub var CHR_DATA: [0x2000]u8 = undefined;
+pub var VRAM: [0x800]u8 = undefined;
+pub var PALETTE_RAM: [0x20]u8 = undefined;
 
 pub var HEADER: [16]u8 = undefined;
 
@@ -27,6 +29,12 @@ pub var flag_negative: bool = false;
 pub var CPU_halted: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 pub var cycles: usize = 0;
 pub var total_cycles: usize = 0;
+
+// -- PPU --
+pub var write_latch: bool = false; // PPU w register
+pub var transfer_address: u16 = undefined; // PPU t register
+pub var vram_address: u16 = undefined; // PPU v register
+pub var ppu_vram_inc_32mode: bool = false;
 
 pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     std.log.info("File path loaded: {s}", .{path});
@@ -51,9 +59,51 @@ pub fn read(address: u16) u8 {
 fn write(address: u16, value: u8) void {
     if (address >= 0x8000) return;
 
-    if (address <= 0x1FFF) {
+    if (address < 0x2000) {
         RAM[address & 0b0000_0111_1111_1111] = value;
         return;
+    } else if (address < 0x4000) {
+        const ppu_address = address & 0x2007; // ppu ram mirroring
+        switch (ppu_address) {
+            0x2000 => {},
+            0x2001 => {},
+            0x2002 => {},
+            0x2003 => {},
+            0x2004 => {},
+            0x2005 => {},
+            0x2006 => { // PPUADDR
+                var temp_vram_address: u16 = 0;
+                if (!write_latch) {
+                    temp_vram_address = (value & 0x3F) << 8;
+                } else {
+                    vram_address = temp_vram_address | value;
+                }
+                write_latch = !write_latch;
+            },
+            0x2007 => { // PPUDATA
+                if (vram_address < 0x2000) {
+                    if (HEADER[5] == 0) { // write to pattern table
+                        CHR_DATA[vram_address] = value;
+                    }
+                } else if (vram_address < 0x3F00) {
+                    if ((HEADER[6] & 1) == 0) { // horizontal mirroring
+                        VRAM[(vram_address & 0x3FF) | (vram_address & 0x800) >> 1] = value;
+                    } else { // vertical mirroring
+                        VRAM[vram_address & 0x7FF] = value;
+                    }
+                } else { // write to palette ram
+                    if ((vram_address & 3) == 0) {
+                        PALETTE_RAM[vram_address & 0x0F] = value;
+                    } else {
+                        PALETTE_RAM[vram_address & 0x1F] = value;
+                    }
+                }
+
+                vram_address += if (ppu_vram_inc_32mode) 32 else 1;
+                vram_address &= 0x3FFF; // TODO: consider using u14
+            },
+            else => {},
+        }
     }
 }
 
@@ -79,7 +129,7 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     @memset(&RAM, 0);
     try reader.interface.readSliceAll(&HEADER);
     try reader.interface.readSliceAll(&ROM);
-    try reader.interface.readSliceAll(&CHR_ROM);
+    try reader.interface.readSliceAll(&CHR_DATA);
 
     A = 0;
     X = 0;
