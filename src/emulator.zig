@@ -2,6 +2,7 @@ const std = @import("std");
 
 const tracelogger = @import("ui/tracelogger.zig");
 const mem_viewer = @import("ui/mem_viewer.zig");
+const pattern_tables = @import("ui/pattern_tables.zig");
 
 pub var PC: u16 = undefined; // program counter
 pub var A: u8 = undefined;
@@ -94,10 +95,12 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     SP = 0xFD;
 
     total_cycles = 7;
+
+    if (pattern_tables.window.ptr != null) pattern_tables.refreshPatternTables();
     try run();
 }
 
-pub fn run() !void {
+fn run() !void {
     while (!CPU_halted.load(.monotonic)) {
         if (tracelogger.logging_enabled.load(.monotonic)) {
             tracelogger.logTrace();

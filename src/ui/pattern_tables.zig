@@ -43,7 +43,7 @@ pub fn openPatternTables(action: QAction) callconv(.c) void {
     window.Show();
 }
 
-fn refreshPatternTables() void {
+pub fn refreshPatternTables() void {
     @memset(std.mem.asBytes(&pixel_buffer), 0);
 
     for (0..2) |table| {
