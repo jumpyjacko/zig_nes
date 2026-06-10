@@ -12,6 +12,7 @@ pub var SP: u8 = undefined; // stack pointer
 
 pub var RAM: [0x800]u8 = undefined;
 pub var ROM: [0x8000]u8 = undefined;
+pub var CHR_ROM: [0x2000]u8 = undefined;
 
 pub var HEADER: [16]u8 = undefined;
 
@@ -77,6 +78,7 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     @memset(&RAM, 0);
     try reader.interface.readSliceAll(&HEADER);
     try reader.interface.readSliceAll(&ROM);
+    try reader.interface.readSliceAll(&CHR_ROM);
 
     A = 0;
     X = 0;

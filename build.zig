@@ -42,7 +42,9 @@ pub fn build(b: *std.Build) void {
         "qfont",
         "qtimer",
         "qheaderview",
-        "qobject"
+        "qobject",
+        "qpixmap",
+        "qimage",
     };
 
     for (qtlibs) |lib| {

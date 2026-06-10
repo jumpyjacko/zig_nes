@@ -3,6 +3,7 @@ const std = @import("std");
 const emulator = @import("../emulator.zig");
 const tracelogger = @import("tracelogger.zig");
 const mem_viewer = @import("mem_viewer.zig");
+const pattern_tables = @import("pattern_tables.zig");
 
 const qt6 = @import("libqt6zig");
 const QApplication = qt6.QApplication;
@@ -71,6 +72,10 @@ pub fn initQtApplication(init: std.process.Init) !void {
     const mem_viewer_action = QAction.New2("Memory Viewer");
     mem_viewer_action.OnTriggered(mem_viewer.openMemViewer);
     tools_menu.AddAction(mem_viewer_action);
+
+    const pattern_table_action = QAction.New2("Pattern Tables");
+    pattern_table_action.OnTriggered(pattern_tables.openPatternTables);
+    tools_menu.AddAction(pattern_table_action);
 
     const layout = QVBoxLayout.New(widget);
     const rom_status_label = QLabel.New3("No ROM loaded. Load one from Emulator > Load ROM...");
