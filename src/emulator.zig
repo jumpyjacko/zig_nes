@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const main_window = @import("ui/main_window.zig");
 const tracelogger = @import("ui/tracelogger.zig");
 const mem_viewer = @import("ui/mem_viewer.zig");
 const pattern_tables = @import("ui/pattern_tables.zig");
@@ -32,9 +33,10 @@ pub var total_cycles: usize = 0;
 
 // -- PPU --
 pub var write_latch: bool = false; // PPU w register
-pub var transfer_address: u16 = undefined; // PPU t register
-pub var vram_address: u16 = undefined; // PPU v register
+pub var transfer_address: u16 = 0; // PPU t register
+pub var vram_address: u16 = 0; // PPU v register
 pub var ppu_vram_inc_32mode: bool = false;
+var temp_vram_address: u16 = 0;
 
 pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     std.log.info("File path loaded: {s}", .{path});
@@ -72,11 +74,11 @@ fn write(address: u16, value: u8) void {
             0x2004 => {},
             0x2005 => {},
             0x2006 => { // PPUADDR
-                var temp_vram_address: u16 = 0;
                 if (!write_latch) {
                     temp_vram_address = (@as(u16, value) & 0x3F) << 8;
                 } else {
                     vram_address = temp_vram_address | value;
+                    transfer_address = vram_address;
                 }
                 write_latch = !write_latch;
             },
@@ -127,6 +129,9 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     var reader = file.reader(io, &buf);
 
     @memset(&RAM, 0);
+    @memset(&VRAM, 0);
+    @memset(&PALETTE_RAM, 0);
+    @memset(&CHR_DATA, 0);
     try reader.interface.readSliceAll(&HEADER);
     try reader.interface.readSliceAll(&ROM);
     reader.interface.readSliceAll(&CHR_DATA) catch |err| {
@@ -161,6 +166,7 @@ fn run() !void {
         try emulate();
         total_cycles += cycles;
     }
+    main_window.displayNametable();
 }
 
 fn emulate() !void {

@@ -15,6 +15,8 @@ const QKeySequence = qt6.QKeySequence;
 const QVBoxLayout = qt6.QVBoxLayout;
 const QLabel = qt6.QLabel;
 const QFileDialog = qt6.QFileDialog;
+const QPixmap = qt6.QPixmap;
+const QImage = qt6.QImage;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
@@ -23,6 +25,14 @@ pub var gpa: std.mem.Allocator = undefined;
 pub var io: std.Io = undefined;
 var ROM_path: []const u8 = "";
 var emu_thread: ?std.Thread = null;
+
+var layout: QVBoxLayout = undefined;
+var rom_status_label: QLabel = undefined;
+
+const nametable_width: comptime_int = 32 * 8;
+const nametable_height: comptime_int = 30 * 8;
+var nametable_buffer: [nametable_height][nametable_width]u8 = undefined;
+var nametable_label: QLabel = undefined;
 
 pub fn initQtApplication(init: std.process.Init) !void {
     const argv = try qt6.init(init.gpa, init.minimal.args);
@@ -37,7 +47,8 @@ pub fn initQtApplication(init: std.process.Init) !void {
     io = init.io;
     defer window.Delete();
     defer freeROMPath();
-    window.SetFixedSize2(300, 250);
+    window.SetWindowFlags(qnamespace_enums.WindowType.Window | qnamespace_enums.WindowType.WindowMinMaxButtonsHint | qnamespace_enums.WindowType.WindowCloseButtonHint);
+    window.Resize(600, 500);
 
     const widget = QWidget.New2();
     defer widget.Delete();
@@ -49,6 +60,7 @@ pub fn initQtApplication(init: std.process.Init) !void {
 
     const file_menu = menu_bar.AddMenu2("File");
     const load_rom_action = QAction.New2("Load rom...");
+    load_rom_action.SetShortcut(QKeySequence.New2("Ctrl+O"));
     load_rom_action.OnTriggered(load_rom);
     file_menu.AddAction(load_rom_action);
 
@@ -61,6 +73,7 @@ pub fn initQtApplication(init: std.process.Init) !void {
 
     const emulation_menu = menu_bar.AddMenu2("Emulation");
     const reset_action = QAction.New2("Reset");
+    reset_action.SetShortcut(QKeySequence.New2("Ctrl+R"));
     reset_action.OnTriggered(resetActionWrapper);
     emulation_menu.AddAction(reset_action);
 
@@ -77,8 +90,8 @@ pub fn initQtApplication(init: std.process.Init) !void {
     pattern_table_action.OnTriggered(pattern_tables.openPatternTables);
     tools_menu.AddAction(pattern_table_action);
 
-    const layout = QVBoxLayout.New(widget);
-    const rom_status_label = QLabel.New3("No ROM loaded. Load one from Emulator > Load ROM...");
+    layout = QVBoxLayout.New(widget);
+    rom_status_label = QLabel.New3("No ROM loaded. Load one from Emulator > Load ROM...");
     rom_status_label.SetAlignment(qnamespace_enums.AlignmentFlag.AlignVCenter | qnamespace_enums.AlignmentFlag.AlignHCenter);
     rom_status_label.SetWordWrap(true);
     layout.AddWidget(rom_status_label);
@@ -131,6 +144,7 @@ fn resetEmulator() void {
         emu_thread = null;
     }
 
+    @memset(std.mem.asBytes(&nametable_buffer), 0);
     emulator.CPU_halted.store(false, .monotonic);
     emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
         std.log.err("Failed to spawn emulator thread: {any}", .{err});
@@ -142,4 +156,34 @@ fn freeROMPath() void {
     if (ROM_path.len > 0) {
         gpa.free(ROM_path);
     }
+}
+
+pub fn displayNametable() void {
+    for (0..30) |row| {
+        for (0..32) |column| {
+            const vram_idx = column + (row * 32);
+            const tile_index = @as(usize, emulator.VRAM[vram_idx]);
+            const chr_base_addr = tile_index * 16;
+            for (0..8) |y| {
+                const low: u8 = emulator.CHR_DATA[chr_base_addr + y];
+                const high: u8 = emulator.CHR_DATA[chr_base_addr + 8 + y];
+
+                for (0..8) |x| {
+                        var twobit: u8 = if (((low >> @intCast(7 - x)) & 1) == 1) 1 else 0;
+                        twobit += if (((high >> @intCast(7 - x)) & 1) == 1) 2 else 0;
+
+                        const grayscale_val = twobit * 85;
+                        const target_y = y + row * 8;
+                        const target_x = x + column * 8;
+                        nametable_buffer[target_y][target_x] = grayscale_val;
+                }
+            }
+        }
+    }
+
+    const image = QImage.New4(@ptrCast(&nametable_buffer), @intCast(nametable_width), @intCast(nametable_height), 24); // Format_RGB888
+    const pixmap = QPixmap.FromImage(image);
+    const scaled_pixmap = pixmap.Scaled4(512, 480, qnamespace_enums.AspectRatioMode.KeepAspectRatio, qnamespace_enums.TransformationMode.FastTransformation);
+
+    rom_status_label.SetPixmap(scaled_pixmap);
 }
