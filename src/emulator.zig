@@ -37,6 +37,7 @@ pub var transfer_address: u16 = 0; // PPU t register
 pub var vram_address: u16 = 0; // PPU v register
 pub var ppu_vram_inc_32mode: bool = false;
 var temp_vram_address: u16 = 0;
+var ppu_read_buffer: u8 = 0;
 
 pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     std.log.info("File path loaded: {s}", .{path});
@@ -47,11 +48,41 @@ pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
 }
 
 pub fn read(address: u16) u8 {
-    if (address <= 0x1FFF) {
+    if (address < 0x2000) {
         return RAM[address & 0b0000_0111_1111_1111];
-    }
+    } else if (address < 0x4000) {
+        const ppu_address = address & 0x2007;
+        switch (ppu_address) {
+            0x2002 => { // PPUSTATUS (incomplete)
+                return 0x80;
+            },
+            0x2007 => {
+                var temp = ppu_read_buffer;
 
-    if (address >= 0x8000) {
+                if (vram_address < 0x2000) {
+                    ppu_read_buffer = CHR_DATA[vram_address];
+                } else if (vram_address < 0x3F00) {
+                    if ((HEADER[6] & 1) == 0) {
+                        ppu_read_buffer = VRAM[(vram_address & 0x3FF) | (vram_address & 0x800) >> 1];
+                    } else {
+                        ppu_read_buffer = VRAM[vram_address & 0x7FF];
+                    }
+                } else {
+                    if ((vram_address & 3) == 0) {
+                        temp = PALETTE_RAM[vram_address & 0x0F];
+                    } else {
+                        temp = PALETTE_RAM[vram_address & 0x1F];
+                    }
+                }
+                vram_address += if (ppu_vram_inc_32mode) 32 else 1;
+                vram_address &= 0x3FFF;
+                return temp;
+            },
+            else => {
+                return 0;
+            },
+        }
+    } else if (address >= 0x8000) {
         return ROM[address - 0x8000];
     }
 
@@ -102,7 +133,7 @@ fn write(address: u16, value: u8) void {
                 }
 
                 vram_address += if (ppu_vram_inc_32mode) 32 else 1;
-                vram_address &= 0x3FFF; // TODO: consider using u14
+                vram_address &= 0x3FFF;
             },
             else => {},
         }
