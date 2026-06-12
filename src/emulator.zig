@@ -5,6 +5,7 @@ const tracelogger = @import("ui/tracelogger.zig");
 const mem_viewer = @import("ui/mem_viewer.zig");
 const pattern_tables = @import("ui/pattern_tables.zig");
 
+// -- CPU --
 pub var PC: u16 = undefined; // program counter
 pub var A: u8 = undefined;
 pub var X: u8 = undefined;
@@ -35,9 +36,24 @@ pub var total_cycles: usize = 0;
 pub var write_latch: bool = false; // PPU w register
 pub var transfer_address: u16 = 0; // PPU t register
 pub var vram_address: u16 = 0; // PPU v register
-pub var ppu_vram_inc_32mode: bool = false;
 var temp_vram_address: u16 = 0;
 var ppu_read_buffer: u8 = 0;
+
+pub var ppu_dot: u32 = 0; // pixel X
+pub var ppu_scanline: u32 = 0; // pixel Y
+pub var ppu_vblank: bool = false;
+
+pub var ppu_mask_8pxmaskBG: bool = false;
+pub var ppu_mask_8pxmaskSprites: bool = false;
+pub var ppu_mask_RenderBG: bool = false;
+pub var ppu_mask_RenderSprites: bool = false;
+
+pub var ppu_nametable_select: bool = false;
+pub var ppu_vram_inc_32mode: bool = false;
+pub var ppu_sprite_pattern_table: bool = false;
+pub var ppu_bg_pattern_table: bool = false;
+pub var ppu_use_8x16_sprites: bool = false;
+pub var ppu_enable_NMI: bool = false;
 
 pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     std.log.info("File path loaded: {s}", .{path});
@@ -54,7 +70,10 @@ pub fn read(address: u16) u8 {
         const ppu_address = address & 0x2007;
         switch (ppu_address) {
             0x2002 => { // PPUSTATUS (incomplete)
-                return 0x80;
+                var ppu_status: u8 = 0;
+                ppu_status |= if (ppu_vblank) 0x80 else 0;
+                ppu_vblank = false;
+                return ppu_status;
             },
             0x2007 => {
                 var temp = ppu_read_buffer;
@@ -98,8 +117,15 @@ fn write(address: u16, value: u8) void {
     } else if (address < 0x4000) {
         const ppu_address = address & 0x2007; // ppu ram mirroring
         switch (ppu_address) {
-            0x2000 => {},
-            0x2001 => {},
+            0x2000 => { // PPUCTRL
+
+            },
+            0x2001 => { // PPUMASK
+                ppu_mask_8pxmaskBG = (value & 2) != 0;
+                ppu_mask_8pxmaskSprites = (value & 4) != 0;
+                ppu_mask_RenderBG = (value & 8) != 0;
+                ppu_mask_RenderSprites = (value & 0x10) != 0;
+            },
             0x2002 => {},
             0x2003 => {},
             0x2004 => {},
@@ -196,13 +222,33 @@ fn run() !void {
 
         try emulate();
         total_cycles += cycles;
+
+        while (cycles > 0) {
+            cycles -= 1;
+            emulatePPU();
+            emulatePPU();
+            emulatePPU();
+        }
     }
     main_window.displayNametable();
 }
 
+var NMI_level_detector: bool = false;
+var do_NMI: bool = false;
 fn emulate() !void {
-    const opcode: u8 = read(PC);
-    PC += 1;
+    const prev_NMI_level_detector = NMI_level_detector;
+    NMI_level_detector = ppu_enable_NMI and ppu_vblank;
+    if (!prev_NMI_level_detector and NMI_level_detector) {
+        do_NMI = true;
+    }
+
+    var opcode: u8 = undefined;
+    if (!do_NMI) {
+        opcode = read(PC);
+        PC += 1;
+    } else { // doing an NMI
+        opcode = 0x00;
+    }
 
     switch (opcode) {
         0x02 => { // HLT
@@ -1017,7 +1063,9 @@ fn emulate() !void {
             cycles = 4;
         },
         0x00 => { // BRK
-            PC += 1;
+            if (!do_NMI) {
+                PC += 1;
+            }
             push(@truncate(PC >> 8));
             push(@truncate(PC));
 
@@ -1035,6 +1083,7 @@ fn emulate() !void {
             const temp_high: u16 = read(0xFFFF);
             PC = (temp_high << 8) + temp_low;
             cycles = 7;
+            do_NMI = false;
         },
         0x40 => { // RTI
             const status = pull();
@@ -1262,6 +1311,23 @@ fn readOperands_IndirectAddressed_YIdx() u16 {
 fn setFlags_ZN(byte: u8) void {
     flag_zero = byte == 0;
     flag_negative = (byte & 0b1000_0000) != 0;
+}
+
+fn emulatePPU() void {
+    if (ppu_dot == 1 and ppu_scanline == 241) {
+        ppu_vblank = true;
+    } else {
+        ppu_vblank = false;
+    }
+
+    ppu_dot += 1;
+    if (ppu_dot > 341) {
+        ppu_dot = 0;
+        ppu_scanline += 1;
+        if (ppu_scanline > 261) {
+            ppu_scanline = 0;
+        }
+    }
 }
 
 const testing = @import("std").testing;

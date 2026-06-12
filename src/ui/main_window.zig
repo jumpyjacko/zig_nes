@@ -165,8 +165,9 @@ pub fn displayNametable() void {
             const tile_index = @as(usize, emulator.VRAM[vram_idx]);
             const chr_base_addr = tile_index * 16;
             for (0..8) |y| {
-                const low: u8 = emulator.CHR_DATA[chr_base_addr + y];
-                const high: u8 = emulator.CHR_DATA[chr_base_addr + 8 + y];
+                const useSecondPatternTable: u16 = if (emulator.ppu_bg_pattern_table) 4096 else 0;
+                const low: u8 = emulator.CHR_DATA[chr_base_addr + y + useSecondPatternTable];
+                const high: u8 = emulator.CHR_DATA[chr_base_addr + 8 + y + useSecondPatternTable];
 
                 for (0..8) |x| {
                         var twobit: u8 = if (((low >> @intCast(7 - x)) & 1) == 1) 1 else 0;
