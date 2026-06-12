@@ -129,7 +129,9 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     @memset(&RAM, 0);
     try reader.interface.readSliceAll(&HEADER);
     try reader.interface.readSliceAll(&ROM);
-    try reader.interface.readSliceAll(&CHR_DATA);
+    reader.interface.readSliceAll(&CHR_DATA) catch |err| {
+        std.log.warn("No CHR_DATA found on rom, skipping... {}", .{err});
+    };
 
     A = 0;
     X = 0;
