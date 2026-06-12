@@ -74,7 +74,7 @@ fn write(address: u16, value: u8) void {
             0x2006 => { // PPUADDR
                 var temp_vram_address: u16 = 0;
                 if (!write_latch) {
-                    temp_vram_address = (value & 0x3F) << 8;
+                    temp_vram_address = (@as(u16, value) & 0x3F) << 8;
                 } else {
                     vram_address = temp_vram_address | value;
                 }
