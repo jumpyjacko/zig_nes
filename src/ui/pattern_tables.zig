@@ -14,7 +14,7 @@ const QImage = qt6.QImage;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
-pub var window: QWidget = undefined;
+pub var window: ?QWidget = null;
 pub var rom_ptr: [*]u8 = &emulator.CHR_DATA;
 
 const width: comptime_int = 256;
@@ -27,11 +27,11 @@ pub fn openPatternTables(action: QAction) callconv(.c) void {
     _ = action;
 
     window = QWidget.New(main_window.window);
-    window.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
-    window.SetWindowTitle("zig_nes - pattern tables");
-    window.SetWindowFlags(qnamespace_enums.WindowType.Window | qnamespace_enums.WindowType.WindowMinMaxButtonsHint | qnamespace_enums.WindowType.WindowCloseButtonHint);
+    window.?.SetAttribute(qnamespace_enums.WidgetAttribute.WA_DeleteOnClose);
+    window.?.SetWindowTitle("zig_nes - pattern tables");
+    window.?.SetWindowFlags(qnamespace_enums.WindowType.Window | qnamespace_enums.WindowType.WindowMinMaxButtonsHint | qnamespace_enums.WindowType.WindowCloseButtonHint);
 
-    const layout = QVBoxLayout.New(window);
+    const layout = QVBoxLayout.New(window.?);
     const label = QLabel.New3("Pattern Tables");
     layout.AddWidget(label);
 
@@ -40,10 +40,11 @@ pub fn openPatternTables(action: QAction) callconv(.c) void {
 
     refreshPatternTables();
 
-    window.Show();
+    window.?.Show();
 }
 
 pub fn refreshPatternTables() void {
+    if (window == null) return;
     @memset(std.mem.asBytes(&pixel_buffer), 0);
 
     for (0..2) |table| {

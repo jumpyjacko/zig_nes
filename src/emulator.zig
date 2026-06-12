@@ -146,7 +146,7 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 
     total_cycles = 7;
 
-    if (pattern_tables.window.ptr != null) pattern_tables.refreshPatternTables();
+    if (pattern_tables.window != null) pattern_tables.refreshPatternTables();
     try run();
 }
 
