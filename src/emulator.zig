@@ -1316,7 +1316,7 @@ fn setFlags_ZN(byte: u8) void {
 fn emulatePPU() void {
     if (ppu_dot == 1 and ppu_scanline == 241) {
         ppu_vblank = true;
-    } else {
+    } else if (ppu_dot == 1 and ppu_scanline == 261) {
         ppu_vblank = false;
     }
 
