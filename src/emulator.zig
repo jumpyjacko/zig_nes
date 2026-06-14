@@ -48,7 +48,7 @@ pub var ppu_mask_8pxmaskSprites: bool = false;
 pub var ppu_mask_RenderBG: bool = false;
 pub var ppu_mask_RenderSprites: bool = false;
 
-pub var ppu_nametable_select: bool = false;
+pub var ppu_nametable_select: u9 = 0;
 pub var ppu_vram_inc_32mode: bool = false;
 pub var ppu_sprite_pattern_table: bool = false;
 pub var ppu_bg_pattern_table: bool = false;
@@ -118,7 +118,12 @@ fn write(address: u16, value: u8) void {
         const ppu_address = address & 0x2007; // ppu ram mirroring
         switch (ppu_address) {
             0x2000 => { // PPUCTRL
-
+                ppu_nametable_select = value & 3;
+                ppu_vram_inc_32mode = (value & 4) != 0;
+                ppu_sprite_pattern_table = (value & 8) != 0;
+                ppu_bg_pattern_table = (value & 0x10) != 0;
+                ppu_use_8x16_sprites = (value & 0x20) != 0;
+                ppu_enable_NMI = (value & 0x80) != 0;
             },
             0x2001 => { // PPUMASK
                 ppu_mask_8pxmaskBG = (value & 2) != 0;
