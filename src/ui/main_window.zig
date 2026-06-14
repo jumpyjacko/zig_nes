@@ -58,6 +58,7 @@ pub fn initQtApplication(init: std.process.Init) !void {
     window.SetMenuBar(menu_bar);
     menu_bar.SetNativeMenuBar(false);
 
+    // -- file menu --
     const file_menu = menu_bar.AddMenu2("File");
     const load_rom_action = QAction.New2("Load rom...");
     load_rom_action.SetShortcut(QKeySequence.New2("Ctrl+O"));
@@ -71,12 +72,19 @@ pub fn initQtApplication(init: std.process.Init) !void {
     exit_action.OnTriggered(exit_window);
     file_menu.AddAction(exit_action);
 
+    // -- emulation menu --
     const emulation_menu = menu_bar.AddMenu2("Emulation");
     const reset_action = QAction.New2("Reset");
     reset_action.SetShortcut(QKeySequence.New2("Ctrl+R"));
     reset_action.OnTriggered(resetActionWrapper);
     emulation_menu.AddAction(reset_action);
 
+    const halt_action = QAction.New2("Stop");
+    // halt_action.SetShortcut(QKeySequence.New2(""));
+    halt_action.OnTriggered(haltActionWrapper);
+    emulation_menu.AddAction(halt_action);
+
+    // -- tools menu --
     const tools_menu = menu_bar.AddMenu2("Tools");
     const tracelogger_action = QAction.New2("Tracelogger");
     tracelogger_action.OnTriggered(tracelogger.openTracelogger);
@@ -135,21 +143,33 @@ fn resetActionWrapper(action: QAction) callconv(.c) void {
     resetEmulator();
 }
 
-fn resetEmulator() void {
+fn haltActionWrapper(action: QAction) callconv(.c) void {
+    _ = action;
+    haltEmulator();
+}
+
+fn resetEmulator() callconv(.c) void {
+    if (ROM_path.len == 0) return;
+
+    haltEmulator();
+
+    emulator.CPU_halted.store(false, .monotonic);
+    emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
+        std.log.err("Failed to spawn emulator thread: {any}", .{err});
+        return;
+    };
+}
+
+fn haltEmulator() void {
     if (ROM_path.len == 0) return;
 
     if (emu_thread) |thread| {
         emulator.CPU_halted.store(true, .monotonic);
         thread.join();
         emu_thread = null;
-    }
 
-    @memset(std.mem.asBytes(&nametable_buffer), 0);
-    emulator.CPU_halted.store(false, .monotonic);
-    emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
-        std.log.err("Failed to spawn emulator thread: {any}", .{err});
-        return;
-    };
+        @memset(std.mem.asBytes(&nametable_buffer), 0);
+    }
 }
 
 fn freeROMPath() void {
