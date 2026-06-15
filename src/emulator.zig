@@ -392,9 +392,6 @@ fn emulate() !void {
             setFlags_ZN(A);
         },
         0xA1 => { // LDA Indirect, X
-        if (tracelogger.logging_enabled.load(.monotonic)) {
-            tracelogger.logTrace();
-        }
             const address = readOperands_IndirectAddressed_XIdx();
             A = read(address);
 
