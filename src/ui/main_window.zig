@@ -184,20 +184,32 @@ pub fn displayNametable() void {
             const vram_idx = column + (row * 32);
             const tile_index = @as(usize, emulator.VRAM[vram_idx]);
             const chr_base_addr = tile_index * 16;
+
+            const attribute_offset: u8 = @truncate((column >> 2) + (row >> 2) * 8);
+            const attributes: u8 = emulator.VRAM[@as(usize, 0x3C0) + attribute_offset];
+            const quadrant: u8 = @truncate(((column >> 1) & 1) + ((row >> 1) & 1) * 2);
+            const shift_amount: u3 = @intCast(quadrant * 2);
+            const pair: u8 = @truncate((attributes >> shift_amount) & 3);
+
             for (0..8) |y| {
                 const useSecondPatternTable: u16 = if (emulator.ppu_bg_pattern_table) 4096 else 0;
                 const low: u8 = emulator.CHR_DATA[chr_base_addr + y + useSecondPatternTable];
                 const high: u8 = emulator.CHR_DATA[chr_base_addr + 8 + y + useSecondPatternTable];
 
                 for (0..8) |x| {
-                        var twobit: u8 = if (((low >> @intCast(7 - x)) & 1) == 1) 1 else 0;
-                        twobit += if (((high >> @intCast(7 - x)) & 1) == 1) 2 else 0;
+                    var twobit: u8 = if (((low >> @intCast(7 - x)) & 1) == 1) 1 else 0;
+                    twobit += if (((high >> @intCast(7 - x)) & 1) == 1) 2 else 0;
 
-                        const colour = emulator.palette[emulator.PALETTE_RAM[twobit]];
+                    var colour: [3]u8 = undefined;
+                    if (twobit == 0) {
+                        colour = emulator.palette[emulator.PALETTE_RAM[0]];
+                    } else {
+                        colour = emulator.palette[emulator.PALETTE_RAM[twobit + pair * 4]];
+                    }
 
-                        const target_y = y + row * 8;
-                        const target_x = x + column * 8;
-                        nametable_buffer[target_y][target_x] = colour;
+                    const target_y = y + row * 8;
+                    const target_x = x + column * 8;
+                    nametable_buffer[target_y][target_x] = colour;
                 }
             }
         }

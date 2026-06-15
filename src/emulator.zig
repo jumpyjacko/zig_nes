@@ -36,6 +36,7 @@ pub var total_cycles: usize = 0;
 pub var write_latch: bool = false; // PPU w register
 pub var transfer_address: u16 = 0; // PPU t register
 pub var vram_address: u16 = 0; // PPU v register
+pub var ppu_x_register: u8 = 0;
 var temp_vram_address: u16 = 0;
 var ppu_read_buffer: u8 = 0;
 
@@ -55,23 +56,34 @@ pub var ppu_bg_pattern_table: bool = false;
 pub var ppu_use_8x16_sprites: bool = false;
 pub var ppu_enable_NMI: bool = false;
 
+var ppu_shift_register_pattern_l: u16 = 0;
+var ppu_shift_register_pattern_h: u16 = 0;
+var ppu_shift_register_attribute_l: u16 = 0;
+var ppu_shift_register_attribute_h: u16 = 0;
+
+var ppu_8step_pattern_lowplane: u16 = 0;
+var ppu_8step_pattern_highplane: u16 = 0;
+var ppu_8step_attribute: u8 = 0;
+var ppu_8step_nextcharacter: u8 = 0;
+var ppu_8step_temp: u8 = 0;
+
 pub const Colour = [3]u8;
 pub const palette = [_]Colour{
-    .{ 0x65, 0x65, 0x65 }, .{ 0x00, 0x2A, 0x84 }, .{ 0x15, 0x13, 0xA2 }, .{ 0x3A, 0x01, 0x9E }, 
-    .{ 0x59, 0x00, 0x7A }, .{ 0x6A, 0x00, 0x3E }, .{ 0x68, 0x08, 0x00 }, .{ 0x53, 0x1D, 0x00 }, 
-    .{ 0x32, 0x34, 0x00 }, .{ 0x0D, 0x46, 0x00 }, .{ 0x00, 0x4F, 0x00 }, .{ 0x00, 0x4C, 0x09 }, 
+    .{ 0x65, 0x65, 0x65 }, .{ 0x00, 0x2A, 0x84 }, .{ 0x15, 0x13, 0xA2 }, .{ 0x3A, 0x01, 0x9E },
+    .{ 0x59, 0x00, 0x7A }, .{ 0x6A, 0x00, 0x3E }, .{ 0x68, 0x08, 0x00 }, .{ 0x53, 0x1D, 0x00 },
+    .{ 0x32, 0x34, 0x00 }, .{ 0x0D, 0x46, 0x00 }, .{ 0x00, 0x4F, 0x00 }, .{ 0x00, 0x4C, 0x09 },
     .{ 0x00, 0x3F, 0x4B }, .{ 0x00, 0x00, 0x00 }, .{ 0x00, 0x00, 0x00 }, .{ 0x00, 0x00, 0x00 },
-    .{ 0xAE, 0xAE, 0xAE }, .{ 0x17, 0x5F, 0xD6 }, .{ 0x43, 0x41, 0xFF }, .{ 0x75, 0x29, 0xFA }, 
-    .{ 0x9E, 0x1D, 0xCA }, .{ 0xB4, 0x20, 0x7B }, .{ 0xB1, 0x33, 0x22 }, .{ 0x96, 0x4E, 0x00 }, 
-    .{ 0x6A, 0x6C, 0x00 }, .{ 0x39, 0x84, 0x00 }, .{ 0x0F, 0x90, 0x00 }, .{ 0x00, 0x8D, 0x33 }, 
+    .{ 0xAE, 0xAE, 0xAE }, .{ 0x17, 0x5F, 0xD6 }, .{ 0x43, 0x41, 0xFF }, .{ 0x75, 0x29, 0xFA },
+    .{ 0x9E, 0x1D, 0xCA }, .{ 0xB4, 0x20, 0x7B }, .{ 0xB1, 0x33, 0x22 }, .{ 0x96, 0x4E, 0x00 },
+    .{ 0x6A, 0x6C, 0x00 }, .{ 0x39, 0x84, 0x00 }, .{ 0x0F, 0x90, 0x00 }, .{ 0x00, 0x8D, 0x33 },
     .{ 0x00, 0x7B, 0x8C }, .{ 0x00, 0x00, 0x00 }, .{ 0x00, 0x00, 0x00 }, .{ 0x00, 0x00, 0x00 },
-    .{ 0xFE, 0xFE, 0xFE }, .{ 0x66, 0xAF, 0xFF }, .{ 0x93, 0x90, 0xFF }, .{ 0xC5, 0x78, 0xFF }, 
-    .{ 0xEE, 0x6C, 0xFF }, .{ 0xFF, 0x6F, 0xCA }, .{ 0xFF, 0x82, 0x71 }, .{ 0xE6, 0x9E, 0x25 }, 
-    .{ 0xBA, 0xBC, 0x00 }, .{ 0x88, 0xD5, 0x01 }, .{ 0x5E, 0xE1, 0x32 }, .{ 0x47, 0xDD, 0x82 }, 
+    .{ 0xFE, 0xFE, 0xFE }, .{ 0x66, 0xAF, 0xFF }, .{ 0x93, 0x90, 0xFF }, .{ 0xC5, 0x78, 0xFF },
+    .{ 0xEE, 0x6C, 0xFF }, .{ 0xFF, 0x6F, 0xCA }, .{ 0xFF, 0x82, 0x71 }, .{ 0xE6, 0x9E, 0x25 },
+    .{ 0xBA, 0xBC, 0x00 }, .{ 0x88, 0xD5, 0x01 }, .{ 0x5E, 0xE1, 0x32 }, .{ 0x47, 0xDD, 0x82 },
     .{ 0x4A, 0xCB, 0xDC }, .{ 0x4E, 0x4E, 0x4E }, .{ 0x00, 0x00, 0x00 }, .{ 0x00, 0x00, 0x00 },
-    .{ 0xFE, 0xFE, 0xFE }, .{ 0xC0, 0xDE, 0xFF }, .{ 0xD2, 0xD1, 0xFF }, .{ 0xE7, 0xC7, 0xFF }, 
-    .{ 0xF8, 0xC2, 0xFF }, .{ 0xFF, 0xC3, 0xE9 }, .{ 0xFF, 0xCB, 0xC4 }, .{ 0xF5, 0xD7, 0xA5 }, 
-    .{ 0xE2, 0xE3, 0x94 }, .{ 0xCE, 0xED, 0x96 }, .{ 0xBC, 0xF2, 0xAA }, .{ 0xB3, 0xF1, 0xCB }, 
+    .{ 0xFE, 0xFE, 0xFE }, .{ 0xC0, 0xDE, 0xFF }, .{ 0xD2, 0xD1, 0xFF }, .{ 0xE7, 0xC7, 0xFF },
+    .{ 0xF8, 0xC2, 0xFF }, .{ 0xFF, 0xC3, 0xE9 }, .{ 0xFF, 0xCB, 0xC4 }, .{ 0xF5, 0xD7, 0xA5 },
+    .{ 0xE2, 0xE3, 0x94 }, .{ 0xCE, 0xED, 0x96 }, .{ 0xBC, 0xF2, 0xAA }, .{ 0xB3, 0xF1, 0xCB },
     .{ 0xB4, 0xE9, 0xF0 }, .{ 0xB6, 0xB6, 0xB6 }, .{ 0x00, 0x00, 0x00 }, .{ 0x00, 0x00, 0x00 },
 };
 
@@ -83,11 +95,12 @@ pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     };
 }
 
+var ppu_address: u16 = 0;
 pub fn read(address: u16) u8 {
     if (address < 0x2000) {
         return RAM[address & 0b0000_0111_1111_1111];
     } else if (address < 0x4000) {
-        const ppu_address = address & 0x2007;
+        ppu_address = address & 0x2007;
         switch (ppu_address) {
             0x2002 => { // PPUSTATUS (incomplete)
                 var ppu_status: u8 = 0;
@@ -98,21 +111,10 @@ pub fn read(address: u16) u8 {
             },
             0x2007 => {
                 var temp = ppu_read_buffer;
-
-                if (vram_address < 0x2000) {
-                    ppu_read_buffer = CHR_DATA[vram_address];
-                } else if (vram_address < 0x3F00) {
-                    if ((HEADER[6] & 1) == 0) {
-                        ppu_read_buffer = VRAM[(vram_address & 0x3FF) | (vram_address & 0x800) >> 1];
-                    } else {
-                        ppu_read_buffer = VRAM[vram_address & 0x7FF];
-                    }
+                if (vram_address > 0x3F00) {
+                    temp = readPPU(vram_address);
                 } else {
-                    if ((vram_address & 3) == 0) {
-                        temp = PALETTE_RAM[vram_address & 0x0F];
-                    } else {
-                        temp = PALETTE_RAM[vram_address & 0x1F];
-                    }
+                    ppu_read_buffer = readPPU(vram_address);
                 }
                 vram_address += if (ppu_vram_inc_32mode) 32 else 1;
                 vram_address &= 0x3FFF;
@@ -129,6 +131,24 @@ pub fn read(address: u16) u8 {
     return 0; // i don't know what to do here
 }
 
+fn readPPU(address: u16) u8 {
+    if (address < 0x2000) {
+        return CHR_DATA[address];
+    } else if (address < 0x3F00) {
+        if ((HEADER[6] & 1) == 0) {
+            return VRAM[(address & 0x3FF) | (address & 0x800) >> 1];
+        } else {
+            return VRAM[address & 0x7FF];
+        }
+    } else {
+        if ((address & 3) == 0) {
+            return PALETTE_RAM[address & 0x0F];
+        } else {
+            return PALETTE_RAM[address & 0x1F];
+        }
+    }
+}
+
 fn write(address: u16, value: u8) void {
     if (address >= 0x8000) return;
 
@@ -136,7 +156,7 @@ fn write(address: u16, value: u8) void {
         RAM[address & 0b0000_0111_1111_1111] = value;
         return;
     } else if (address < 0x4000) {
-        const ppu_address = address & 0x2007; // ppu ram mirroring
+        ppu_address = address & 0x2007; // ppu ram mirroring
         switch (ppu_address) {
             0x2000 => { // PPUCTRL
                 ppu_nametable_select = value & 3;
@@ -155,7 +175,15 @@ fn write(address: u16, value: u8) void {
             0x2002 => {},
             0x2003 => {},
             0x2004 => {},
-            0x2005 => {},
+            0x2005 => { // PPUSCROLL
+                if (!write_latch) {
+                    ppu_x_register = value & 7;
+                    temp_vram_address = (temp_vram_address & 0b0111111111100000) | (value >> 3);
+                } else {
+                    transfer_address = (temp_vram_address & 0b00000110000011111) | (((value & 0xF8) << 2) | (@as(u16, value & 7) << 12));
+                }
+                write_latch = !write_latch;
+            },
             0x2006 => { // PPUADDR
                 if (!write_latch) {
                     temp_vram_address = (@as(u16, value) & 0x3F) << 8;
@@ -1345,6 +1373,79 @@ fn emulatePPU() void {
         ppu_vblank = false;
     }
 
+    if ((ppu_scanline < 240) or ppu_scanline == 261) {
+        if ((ppu_dot > 0 and ppu_dot <= 256) or (ppu_dot > 320 and ppu_dot <= 336)) {
+            if (ppu_mask_RenderBG or ppu_mask_RenderSprites) {
+                if (ppu_mask_RenderBG) {
+                    ppu_shift_register_pattern_l = ppu_shift_register_pattern_l << 1;
+                    ppu_shift_register_pattern_h = ppu_shift_register_pattern_h << 1;
+                    ppu_shift_register_attribute_l = ppu_shift_register_attribute_l << 1;
+                    ppu_shift_register_attribute_h = ppu_shift_register_attribute_h << 1;
+                }
+
+                var cycle_tick: u8 = 0;
+                cycle_tick = @truncate((ppu_dot - 1) & 7);
+                switch (cycle_tick) {
+                    0 => {
+                        ppu_shift_register_pattern_l = (ppu_shift_register_pattern_l & 0xFF00) | ppu_8step_pattern_lowplane;
+                        ppu_shift_register_pattern_h = (ppu_shift_register_pattern_h & 0xFF00) | ppu_8step_pattern_highplane;
+                        ppu_shift_register_attribute_l = (ppu_shift_register_attribute_l & 0xFF00) | if ((ppu_8step_attribute & 1) == 1) @as(u16, 0xFF) else @as(u16, 0);
+                        ppu_shift_register_attribute_h = (ppu_shift_register_attribute_h & 0xFF00) | if ((ppu_8step_attribute & 2) == 2) @as(u16, 0xFF) else @as(u16, 0);
+                        ppu_address = 0x2000 + (vram_address & 0x0FFF);
+                        ppu_8step_temp = readPPU(ppu_address);
+                    },
+                    1 => {
+                        ppu_8step_nextcharacter = ppu_8step_temp;
+                    },
+                    2 => {
+                        ppu_address = (0x23C0 | (vram_address & 0x0C00) | ((vram_address >> 4) & 0x38) | ((vram_address >> 2) & 0x07));
+                        ppu_8step_temp = readPPU(ppu_address);
+                    },
+                    3 => {
+                        ppu_8step_attribute = ppu_8step_temp;
+                        if ((vram_address & 3) >= 2) {
+                            ppu_8step_attribute = @truncate(ppu_8step_attribute >> 2);
+                        }
+                        if ((((vram_address & 0b0000001111100000) >> 5) & 3) >= 2) {
+                            ppu_8step_attribute = @truncate(ppu_8step_attribute >> 4);
+                        }
+                        ppu_8step_attribute = ppu_8step_attribute & 3;
+                    },
+                    4 => {
+                        ppu_address = (((vram_address & 0b0111000000000000) >> 12) | ppu_8step_nextcharacter * 16 | (if (ppu_bg_pattern_table) @as(u16, 0x1000) else @as(u16, 0)));
+                        ppu_8step_temp = readPPU(ppu_address);
+                    },
+                    5 => {
+                        ppu_8step_pattern_lowplane = ppu_8step_temp;
+                        ppu_address += 8;
+                    },
+                    6 => {
+                        ppu_8step_temp = readPPU(ppu_address);
+                    },
+                    7 => {
+                        ppu_8step_pattern_highplane = ppu_8step_temp;
+                        if ((vram_address & 0x001F) == 31) {
+                            vram_address &= 0xFFE0;
+                            vram_address ^= 0x0400;
+                        } else {
+                            vram_address += 1;
+                        }
+                    },
+                    else => unreachable,
+                }
+            }
+        }
+    }
+
+    if (ppu_dot == 256) {
+        ppu_IncrementScrollY();
+    } else if (ppu_dot == 257) {
+        ppu_ResetXScroll();
+    }
+    if (ppu_dot >= 280 and ppu_dot <= 304 and ppu_scanline == 261) {
+        ppu_ResetYScroll();
+    }
+
     ppu_dot += 1;
     if (ppu_dot > 341) {
         ppu_dot = 0;
@@ -1353,6 +1454,32 @@ fn emulatePPU() void {
             ppu_scanline = 0;
         }
     }
+}
+
+fn ppu_IncrementScrollY() void {
+    if ((vram_address & 0x7000) != 0x7000) {
+        vram_address += 0x1000;
+    } else {
+        vram_address &= 0x0FFF;
+        var y = (vram_address & 0x03E0) >> 5;
+        if (y == 29) {
+            y = 0;
+            vram_address &= 0x0800;
+        } else {
+            y += 1;
+            y &= 0x1F;
+        }
+
+        vram_address = (vram_address & 0xFC1F) | (y << 5);
+    }
+}
+
+fn ppu_ResetXScroll() void {
+    vram_address = (vram_address & 0b0111101111100000) | (transfer_address & 0b0000010000011111);
+}
+
+fn ppu_ResetYScroll() void {
+    vram_address = (vram_address & 0b0000010000011111) | (transfer_address & 0b0111101111100000);
 }
 
 const testing = @import("std").testing;
