@@ -67,7 +67,7 @@ pub fn refreshPatternTables() void {
         }
     }
 
-    const image = QImage.New4(@ptrCast(&pixel_buffer), @intCast(width), @intCast(height), 24); // Format_RGB888
+    const image = QImage.New4(@ptrCast(&pixel_buffer), @intCast(width), @intCast(height), 24); // Format_Grayscale8
     const pixmap = QPixmap.FromImage(image);
     const scaled_pixmap = pixmap.Scaled4(512, 256, qnamespace_enums.AspectRatioMode.KeepAspectRatio, qnamespace_enums.TransformationMode.FastTransformation);
 
