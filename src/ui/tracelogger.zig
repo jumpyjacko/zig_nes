@@ -13,6 +13,7 @@ const QTreeWidget = qt6.QTreeWidget;
 const QTreeWidgetItem = qt6.QTreeWidgetItem;
 const QCheckBox = qt6.QCheckBox;
 const QFont = qt6.QFont;
+const QPushButton = qt6.QPushButton;
 
 const qnamespace_enums = qt6.qnamespace_enums;
 
@@ -108,8 +109,12 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     logging_checkbox.SetLayoutDirection(qnamespace_enums.LayoutDirection.RightToLeft);
     logging_checkbox.OnStateChanged(checkboxClicked);
 
+    const clear_button = QPushButton.New3("Clear logs");
+    clear_button.OnPressed(clearTracesWrapper);
+
     top_layout.AddWidget(label);
     top_layout.AddStretch();
+    top_layout.AddWidget(clear_button);
     top_layout.AddWidget(logging_checkbox);
     layout.AddLayout(top_layout);
 
@@ -232,6 +237,10 @@ pub fn logTrace() void {
     addEntry(disassembly, registers, processor_flags, cycle);
 }
 
+pub fn clearTraces() void {
+    tree_widget.Clear();
+}
+
 fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
     const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
     const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
@@ -247,6 +256,11 @@ fn checkboxClicked(checkbox: QCheckBox, state: i32) callconv(.c) void {
     }
 
     std.log.debug("Checkbox clicked, logging enabled state: {}", .{logging_enabled.load(.monotonic)});
+}
+
+fn clearTracesWrapper(button: QPushButton) callconv(.c) void {
+    _ = button;
+    clearTraces();
 }
 
 fn windowClose(widget: QWidget) callconv(.c) void {

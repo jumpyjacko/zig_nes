@@ -46,6 +46,8 @@ pub fn build(b: *std.Build) void {
         "qobject",
         "qpixmap",
         "qimage",
+        "qpushbutton",
+        "qabstractbutton",
     };
 
     for (qtlibs) |lib| {
