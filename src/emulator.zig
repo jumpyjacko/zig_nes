@@ -221,10 +221,6 @@ pub fn reset(io: std.Io, path: []const u8) !void {
 
 fn run() !void {
     while (!CPU_halted.load(.monotonic)) {
-        if (tracelogger.logging_enabled.load(.monotonic)) {
-            tracelogger.logTrace();
-        }
-
         try emulate();
         total_cycles += cycles;
 
@@ -250,6 +246,9 @@ fn emulate() !void {
     var opcode: u8 = undefined;
     if (!do_NMI) {
         opcode = read(PC);
+        if (tracelogger.logging_enabled.load(.monotonic)) {
+            tracelogger.logTrace();
+        }
         PC += 1;
     } else { // doing an NMI
         opcode = 0x00;
