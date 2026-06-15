@@ -31,7 +31,7 @@ var rom_status_label: QLabel = undefined;
 
 const nametable_width: comptime_int = 32 * 8;
 const nametable_height: comptime_int = 30 * 8;
-var nametable_buffer: [nametable_height][nametable_width]u8 = undefined;
+var nametable_buffer: [nametable_height][nametable_width][3]u8 = undefined;
 var nametable_label: QLabel = undefined;
 
 pub fn initQtApplication(init: std.process.Init) !void {
@@ -193,16 +193,17 @@ pub fn displayNametable() void {
                         var twobit: u8 = if (((low >> @intCast(7 - x)) & 1) == 1) 1 else 0;
                         twobit += if (((high >> @intCast(7 - x)) & 1) == 1) 2 else 0;
 
-                        const grayscale_val = twobit * 85;
+                        const colour = emulator.palette[emulator.PALETTE_RAM[twobit]];
+
                         const target_y = y + row * 8;
                         const target_x = x + column * 8;
-                        nametable_buffer[target_y][target_x] = grayscale_val;
+                        nametable_buffer[target_y][target_x] = colour;
                 }
             }
         }
     }
 
-    const image = QImage.New4(@ptrCast(&nametable_buffer), @intCast(nametable_width), @intCast(nametable_height), 24); // Format_RGB888
+    const image = QImage.New4(@ptrCast(&nametable_buffer), @intCast(nametable_width), @intCast(nametable_height), 13); // Format_RGB888
     const pixmap = QPixmap.FromImage(image);
     const scaled_pixmap = pixmap.Scaled4(512, 480, qnamespace_enums.AspectRatioMode.KeepAspectRatio, qnamespace_enums.TransformationMode.FastTransformation);
 
