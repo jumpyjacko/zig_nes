@@ -73,6 +73,7 @@ pub fn read(address: u16) u8 {
                 var ppu_status: u8 = 0;
                 ppu_status |= if (ppu_vblank) 0x80 else 0;
                 ppu_vblank = false;
+                write_latch = false;
                 return ppu_status;
             },
             0x2007 => {
@@ -371,6 +372,9 @@ fn emulate() !void {
             setFlags_ZN(A);
         },
         0xA1 => { // LDA Indirect, X
+        if (tracelogger.logging_enabled.load(.monotonic)) {
+            tracelogger.logTrace();
+        }
             const address = readOperands_IndirectAddressed_XIdx();
             A = read(address);
 
@@ -1083,8 +1087,8 @@ fn emulate() !void {
             if (flag_negative) status |= 0b1000_0000;
             push(status);
 
-            const temp_low = read(0xFFFE);
-            const temp_high: u16 = read(0xFFFF);
+            const temp_low = read(if (do_NMI) 0xFFFA else 0xFFFE);
+            const temp_high: u16 = read(if (do_NMI) 0xFFFB else 0xFFFF);
             PC = (temp_high << 8) + temp_low;
             cycles = 7;
             do_NMI = false;
