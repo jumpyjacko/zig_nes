@@ -616,9 +616,9 @@ fn emulate() !void {
             cycles = 6;
         },
         0xFE => { // INC Absolute, X
-            cycles = 6;
             const address = readOperands_AbsoluteAddressed_XIdx();
             opINC(address, read(address));
+            cycles = 7;
         },
         0xC6 => { // DEC Zero Page
             const address = readOperands_ZeroPage();
@@ -636,9 +636,9 @@ fn emulate() !void {
             cycles = 6;
         },
         0xDE => { // DEC Absolute, X
-            cycles = 6;
             const address = readOperands_AbsoluteAddressed_XIdx();
             opDEC(address, read(address));
+            cycles = 7;
         },
         0xE8 => { // INX
             X +%= 1;
