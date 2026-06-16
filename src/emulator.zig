@@ -1523,4 +1523,3 @@ fn ppu_ResetXScroll() void {
 fn ppu_ResetYScroll() void {
     vram_address = (vram_address & 0b0000010000011111) | (transfer_address & 0b0111101111100000);
 }
-
