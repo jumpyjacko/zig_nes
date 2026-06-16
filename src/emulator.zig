@@ -67,6 +67,9 @@ var ppu_8step_attribute: u8 = 0;
 var ppu_8step_nextcharacter: u16 = 0;
 var ppu_8step_temp: u8 = 0;
 
+// -- PPU logging --
+pub var ppu_cycle: usize = 28;
+
 pub const Colour = [3]u8;
 pub const palette = [_]Colour{
     .{ 0x65, 0x65, 0x65 }, .{ 0x00, 0x2A, 0x84 }, .{ 0x15, 0x13, 0xA2 }, .{ 0x3A, 0x01, 0x9E },
@@ -264,6 +267,10 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     SP = 0xFD;
 
     total_cycles = 7;
+
+    ppu_cycle = 28;
+    ppu_dot = 28;
+    ppu_scanline = 0;
 
     if (pattern_tables.window != null) pattern_tables.refreshPatternTables();
     try run();
@@ -1163,16 +1170,14 @@ fn opBranch(condition: bool) void {
     PC += 1;
 
     if (condition) {
+        cycles += 1;
+
         const old_pc = PC;
         PC = @as(u16, @intCast(@as(i32, PC) + offset));
 
         if ((old_pc & 0xFF00) != (PC & 0xFF00)) {
-            cycles = 4;
-        } else {
-            cycles = 3;
+            cycles += 1;
         }
-    } else {
-        cycles = 2;
     }
 }
 
@@ -1481,6 +1486,8 @@ fn emulatePPU() void {
             ppu_scanline = 0;
         }
     }
+
+    ppu_cycle += 1;
 }
 
 fn ppu_IncrementScrollY() void {

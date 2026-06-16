@@ -121,8 +121,8 @@ pub fn openTracelogger(action: QAction) callconv(.c) void {
     const mono_font = QFont.New2("monospace");
 
     tree_widget = QTreeWidget.New2();
-    tree_widget.SetColumnCount(4);
-    const headers: [4][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)", "Cycle" };
+    tree_widget.SetColumnCount(5);
+    const headers: [5][]const u8 = .{ "Disassembly", "Registers", "Flags (nv|dizc)", "Cycle", "PPU" };
     tree_widget.SetHeaderLabels(main_window.gpa, &headers);
     tree_widget.SetColumnWidth(0, 300);
     tree_widget.SetColumnWidth(1, 275);
@@ -234,17 +234,25 @@ pub fn logTrace() void {
     };
     defer main_window.gpa.free(cycle);
 
-    addEntry(disassembly, registers, processor_flags, cycle);
+    const ppu = std.fmt.allocPrint(main_window.gpa, "PPU Cycle: {d}  ({d}, {d})", .{ emulator.ppu_cycle, emulator.ppu_scanline, emulator.ppu_dot }) catch {
+        return;
+    };
+    defer main_window.gpa.free(ppu);
+
+    addEntry(disassembly, registers, processor_flags, cycle, ppu);
 }
 
 pub fn clearTraces() void {
     tree_widget.Clear();
 }
 
-fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8) void {
-    const entries: [4][]const u8 = .{ disassembly, registers, processor_flags, cycle };
-    const entry = QTreeWidgetItem.New2(main_window.gpa, &entries);
-    tree_widget.AddTopLevelItem(entry);
+fn addEntry(disassembly: []const u8, registers: []const u8, processor_flags: []const u8, cycle: []const u8, ppu: []const u8) void {
+    const entry = QTreeWidgetItem.New3(tree_widget);
+    entry.SetText(0, disassembly);
+    entry.SetText(1, registers);
+    entry.SetText(2, processor_flags);
+    entry.SetText(3, cycle);
+    entry.SetText(4, ppu);
 }
 
 fn checkboxClicked(checkbox: QCheckBox, state: i32) callconv(.c) void {
@@ -266,4 +274,6 @@ fn clearTracesWrapper(button: QPushButton) callconv(.c) void {
 fn windowClose(widget: QWidget) callconv(.c) void {
     _ = widget;
     logging_enabled.store(false, .monotonic);
+    clearTraces();
+    tree_widget.Delete();
 }
