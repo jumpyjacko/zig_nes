@@ -508,27 +508,35 @@ fn emulate() !void {
             cycles = 4;
         },
         0x10 => { // BPL
+            cycles = 2;
             opBranch(!flag_negative);
         },
         0x30 => { // BMI
+            cycles = 2;
             opBranch(flag_negative);
         },
         0x50 => { // BVC
+            cycles = 2;
             opBranch(!flag_overflow);
         },
         0x70 => { // BVS
+            cycles = 2;
             opBranch(flag_overflow);
         },
         0x90 => { // BCC
+            cycles = 2;
             opBranch(!flag_carry);
         },
         0xB0 => { // BCS
+            cycles = 2;
             opBranch(flag_carry);
         },
         0xD0 => { // BNE
+            cycles = 2;
             opBranch(!flag_zero);
         },
         0xF0 => { // BEQ
+            cycles = 2;
             opBranch(flag_zero);
         },
         0x48 => { // PHA
@@ -1479,7 +1487,7 @@ fn emulatePPU() void {
     }
 
     ppu_dot += 1;
-    if (ppu_dot > 341) {
+    if (ppu_dot >= 341) {
         ppu_dot = 0;
         ppu_scanline += 1;
         if (ppu_scanline > 261) {
