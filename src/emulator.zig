@@ -39,6 +39,7 @@ pub var vram_address: u16 = 0; // PPU v register
 pub var ppu_x_register: u8 = 0;
 var temp_vram_address: u16 = 0;
 var ppu_read_buffer: u8 = 0;
+var ppu_address_bus: u16 = 0;
 
 pub var ppu_dot: u16 = 0; // pixel X
 pub var ppu_scanline: u16 = 0; // pixel Y
@@ -49,7 +50,7 @@ pub var ppu_mask_8pxmaskSprites: bool = false;
 pub var ppu_mask_RenderBG: bool = false;
 pub var ppu_mask_RenderSprites: bool = false;
 
-pub var ppu_nametable_select: u2 = 0;
+pub var ppu_nametable_select: u8 = 0;
 pub var ppu_vram_inc_32mode: bool = false;
 pub var ppu_sprite_pattern_table: bool = false;
 pub var ppu_bg_pattern_table: bool = false;
@@ -98,14 +99,13 @@ pub fn runEmulatorThread(io: std.Io, path: []const u8) void {
     };
 }
 
-var ppu_address: u16 = 0;
 pub fn read(address: u16) u8 {
     if (address < 0x2000) {
         return RAM[address & 0b0000_0111_1111_1111];
     } else if (address < 0x4000) {
-        ppu_address = address & 0x2007;
-        switch (ppu_address) {
-            0x2002 => { // PPUSTATUS (incomplete)
+        const temp_address = address & 0x2007;
+        switch (temp_address) {
+            0x2002 => { // PPUSTATUS
                 var ppu_status: u8 = 0;
                 ppu_status |= if (ppu_vblank) 0x80 else 0;
                 ppu_status |= 0x40;
@@ -160,10 +160,10 @@ fn write(address: u16, value: u8) void {
         RAM[address & 0b0000_0111_1111_1111] = value;
         return;
     } else if (address < 0x4000) {
-        ppu_address = address & 0x2007; // ppu ram mirroring
-        switch (ppu_address) {
+        const temp_address = address & 0x2007; // ppu ram mirroring
+        switch (temp_address) {
             0x2000 => { // PPUCTRL
-                ppu_nametable_select = @intCast(value & 3);
+                ppu_nametable_select = value & 3;
                 ppu_vram_inc_32mode = (value & 4) != 0;
                 ppu_sprite_pattern_table = (value & 8) != 0;
                 ppu_bg_pattern_table = (value & 0x10) != 0;
@@ -1152,8 +1152,8 @@ fn emulate() !void {
             const temp_low = read(if (do_NMI) 0xFFFA else 0xFFFE);
             const temp_high: u16 = read(if (do_NMI) 0xFFFB else 0xFFFF);
             PC = (temp_high << 8) + temp_low;
-            cycles = 7;
             do_NMI = false;
+            cycles = 7;
         },
         0x40 => { // RTI
             const status = pull();
@@ -1388,103 +1388,103 @@ fn emulatePPU() void {
         ppu_vblank = false;
     }
 
-    if (ppu_scanline < 240 or ppu_scanline == 261) {
-        if ((ppu_dot > 0 and ppu_dot <= 256) or (ppu_dot > 320 and ppu_dot <= 336)) {
-            if (ppu_mask_RenderBG or ppu_mask_RenderSprites) {
-                if (ppu_mask_RenderBG) {
-                    ppu_shift_register_pattern_l = ppu_shift_register_pattern_l << 1;
-                    ppu_shift_register_pattern_h = ppu_shift_register_pattern_h << 1;
-                    ppu_shift_register_attribute_l = ppu_shift_register_attribute_l << 1;
-                    ppu_shift_register_attribute_h = ppu_shift_register_attribute_h << 1;
-                }
-
-                var cycle_tick: u8 = 0;
-                cycle_tick = @intCast((ppu_dot - 1) & 7);
-                switch (cycle_tick) {
-                    0 => {
-                        ppu_shift_register_pattern_l = (ppu_shift_register_pattern_l & 0xFF00) | ppu_8step_pattern_lowplane;
-                        ppu_shift_register_pattern_h = (ppu_shift_register_pattern_h & 0xFF00) | ppu_8step_pattern_highplane;
-                        ppu_shift_register_attribute_l = (ppu_shift_register_attribute_l & 0xFF00) | if ((ppu_8step_attribute & 1) == 1) @as(u16, 0xFF) else @as(u16, 0);
-                        ppu_shift_register_attribute_h = (ppu_shift_register_attribute_h & 0xFF00) | if ((ppu_8step_attribute & 2) == 2) @as(u16, 0xFF) else @as(u16, 0);
-                        ppu_address = 0x2000 + (vram_address & 0x0FFF);
-                        ppu_8step_temp = readPPU(ppu_address);
-                    },
-                    1 => {
-                        ppu_8step_nextcharacter = ppu_8step_temp;
-                    },
-                    2 => {
-                        ppu_address = (0x23C0 | (vram_address & 0x0C00) | ((vram_address >> 4) & 0x38) | ((vram_address >> 2) & 0x07));
-                        ppu_8step_temp = readPPU(ppu_address);
-                    },
-                    3 => {
-                        ppu_8step_attribute = ppu_8step_temp;
-                        if ((vram_address & 3) >= 2) {
-                            ppu_8step_attribute = ppu_8step_attribute >> 2;
-                        }
-                        if ((((vram_address & 0b0000001111100000) >> 5) & 3) >= 2) {
-                            ppu_8step_attribute = ppu_8step_attribute >> 4;
-                        }
-                        ppu_8step_attribute = ppu_8step_attribute & 3;
-                    },
-                    4 => {
-                        ppu_address = (((vram_address & 0b0111000000000000) >> 12) | ppu_8step_nextcharacter * 16 | (if (ppu_bg_pattern_table) @as(u16, 0x1000) else @as(u16, 0)));
-                        ppu_8step_temp = readPPU(ppu_address);
-                    },
-                    5 => {
-                        ppu_8step_pattern_lowplane = ppu_8step_temp;
-                        ppu_address += 8;
-                    },
-                    6 => {
-                        ppu_8step_temp = readPPU(ppu_address);
-                    },
-                    7 => {
-                        ppu_8step_pattern_highplane = ppu_8step_temp;
-                        if ((vram_address & 0x001F) == 31) {
-                            vram_address &= 0xFFE0;
-                            vram_address ^= 0x0400;
-                        } else {
-                            vram_address += 1;
-                        }
-                    },
-                    else => unreachable,
-                }
-            }
-        }
-    }
-
-    if (ppu_dot == 256) {
-        ppu_IncrementScrollY();
-    } else if (ppu_dot == 257) {
-        ppu_ResetXScroll();
-    }
-    if (ppu_dot >= 280 and ppu_dot <= 304 and ppu_scanline == 261) {
-        ppu_ResetYScroll();
-    }
-
-    if (ppu_scanline < 241 and ppu_dot > 0 and ppu_dot <= 256) {
-        var palette_high: u8 = 0; // which palette to use
-        var palette_low: u8 = 0; // which indexed colour
-        if (ppu_mask_RenderBG and (ppu_dot > 8 or ppu_mask_8pxmaskBG)) {
-            const col0 = (ppu_shift_register_pattern_l >> @intCast(15 - ppu_x_register)) & 1;
-            const col1 = (ppu_shift_register_pattern_h >> @intCast(15 - ppu_x_register)) & 1;
-            palette_low = @truncate((col1 << 1) | col0);
-
-            const pal0 = (ppu_shift_register_attribute_l >> @intCast(15 - ppu_x_register)) & 1;
-            const pal1 = (ppu_shift_register_attribute_h >> @intCast(15 - ppu_x_register)) & 1;
-            palette_high = @truncate((pal1 << 1) | pal0);
-
-            if (palette_low == 0 and palette_high != 0) {
-                palette_high = 0;
-            }
-        }
-
-        const dot_palette = PALETTE_RAM[(palette_high << 2) + palette_low] & 0x3F;
-        const colour = palette[dot_palette];
-
-        const target_x = ppu_dot - 1;
-        const target_y = ppu_scanline;
-        main_window.render_buffer[target_y][target_x] = colour;
-    }
+    // if (ppu_scanline < 240 or ppu_scanline == 261) {
+    //     if ((ppu_dot > 0 and ppu_dot <= 256) or (ppu_dot > 320 and ppu_dot <= 336)) {
+    //         if (ppu_mask_RenderBG or ppu_mask_RenderSprites) {
+    //             if (ppu_mask_RenderBG) {
+    //                 ppu_shift_register_pattern_l = ppu_shift_register_pattern_l << 1;
+    //                 ppu_shift_register_pattern_h = ppu_shift_register_pattern_h << 1;
+    //                 ppu_shift_register_attribute_l = ppu_shift_register_attribute_l << 1;
+    //                 ppu_shift_register_attribute_h = ppu_shift_register_attribute_h << 1;
+    //             }
+    //
+    //             var cycle_tick: u8 = 0;
+    //             cycle_tick = @intCast((ppu_dot - 1) & 7);
+    //             switch (cycle_tick) {
+    //                 0 => {
+    //                     ppu_shift_register_pattern_l = (ppu_shift_register_pattern_l & 0xFF00) | ppu_8step_pattern_lowplane;
+    //                     ppu_shift_register_pattern_h = (ppu_shift_register_pattern_h & 0xFF00) | ppu_8step_pattern_highplane;
+    //                     ppu_shift_register_attribute_l = (ppu_shift_register_attribute_l & 0xFF00) | if ((ppu_8step_attribute & 1) == 1) @as(u16, 0xFF) else @as(u16, 0);
+    //                     ppu_shift_register_attribute_h = (ppu_shift_register_attribute_h & 0xFF00) | if ((ppu_8step_attribute & 2) == 2) @as(u16, 0xFF) else @as(u16, 0);
+    //                     ppu_address_bus = 0x2000 + (vram_address & 0x0FFF);
+    //                     ppu_8step_temp = readPPU(ppu_address_bus);
+    //                 },
+    //                 1 => {
+    //                     ppu_8step_nextcharacter = ppu_8step_temp;
+    //                 },
+    //                 2 => {
+    //                     ppu_address_bus = (0x23C0 | (vram_address & 0x0C00) | ((vram_address >> 4) & 0x38) | ((vram_address >> 2) & 0x07));
+    //                     ppu_8step_temp = readPPU(ppu_address_bus);
+    //                 },
+    //                 3 => {
+    //                     ppu_8step_attribute = ppu_8step_temp;
+    //                     if ((vram_address & 3) >= 2) {
+    //                         ppu_8step_attribute = ppu_8step_attribute >> 2;
+    //                     }
+    //                     if ((((vram_address & 0b0000001111100000) >> 5) & 3) >= 2) {
+    //                         ppu_8step_attribute = ppu_8step_attribute >> 4;
+    //                     }
+    //                     ppu_8step_attribute = ppu_8step_attribute & 3;
+    //                 },
+    //                 4 => {
+    //                     ppu_address_bus = (((vram_address & 0b0111000000000000) >> 12) | ppu_8step_nextcharacter * 16 | (if (ppu_bg_pattern_table) @as(u16, 0x1000) else @as(u16, 0)));
+    //                     ppu_8step_temp = readPPU(ppu_address_bus);
+    //                 },
+    //                 5 => {
+    //                     ppu_8step_pattern_lowplane = ppu_8step_temp;
+    //                     ppu_address_bus += 8;
+    //                 },
+    //                 6 => {
+    //                     ppu_8step_temp = readPPU(ppu_address_bus);
+    //                 },
+    //                 7 => {
+    //                     ppu_8step_pattern_highplane = ppu_8step_temp;
+    //                     if ((vram_address & 0x001F) == 31) {
+    //                         vram_address &= 0xFFE0;
+    //                         vram_address ^= 0x0400;
+    //                     } else {
+    //                         vram_address += 1;
+    //                     }
+    //                 },
+    //                 else => unreachable,
+    //             }
+    //         }
+    //     }
+    // }
+    //
+    // if (ppu_dot == 256) {
+    //     ppu_IncrementScrollY();
+    // } else if (ppu_dot == 257) {
+    //     ppu_ResetXScroll();
+    // }
+    // if (ppu_dot >= 280 and ppu_dot <= 304 and ppu_scanline == 261) {
+    //     ppu_ResetYScroll();
+    // }
+    //
+    // if (ppu_scanline < 241 and ppu_dot > 0 and ppu_dot <= 256) {
+    //     var palette_high: u8 = 0; // which palette to use
+    //     var palette_low: u8 = 0; // which indexed colour
+    //     if (ppu_mask_RenderBG and (ppu_dot > 8 or ppu_mask_8pxmaskBG)) {
+    //         const col0 = (ppu_shift_register_pattern_l >> @intCast(15 - ppu_x_register)) & 1;
+    //         const col1 = (ppu_shift_register_pattern_h >> @intCast(15 - ppu_x_register)) & 1;
+    //         palette_low = @truncate((col1 << 1) | col0);
+    //
+    //         const pal0 = (ppu_shift_register_attribute_l >> @intCast(15 - ppu_x_register)) & 1;
+    //         const pal1 = (ppu_shift_register_attribute_h >> @intCast(15 - ppu_x_register)) & 1;
+    //         palette_high = @truncate((pal1 << 1) | pal0);
+    //
+    //         if (palette_low == 0 and palette_high != 0) {
+    //             palette_high = 0;
+    //         }
+    //     }
+    //
+    //     const dot_palette = PALETTE_RAM[(palette_high << 2) + palette_low] & 0x3F;
+    //     const colour = palette[dot_palette];
+    //
+    //     const target_x = ppu_dot - 1;
+    //     const target_y = ppu_scanline;
+    //     main_window.render_buffer[target_y][target_x] = colour;
+    // }
 
     ppu_dot += 1;
     if (ppu_dot >= 341) {
