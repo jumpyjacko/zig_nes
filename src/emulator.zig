@@ -272,6 +272,29 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     ppu_dot = 28;
     ppu_scanline = 0;
 
+    ppu_mask_8pxmaskBG = false;
+    ppu_mask_8pxmaskSprites = false;
+    ppu_mask_RenderBG = false;
+    ppu_mask_RenderSprites = false;
+
+    ppu_nametable_select = 0;
+    ppu_vram_inc_32mode = false;
+    ppu_sprite_pattern_table = false;
+    ppu_bg_pattern_table = false;
+    ppu_use_8x16_sprites = false;
+    ppu_enable_NMI = false;
+
+    ppu_shift_register_pattern_l = 0;
+    ppu_shift_register_pattern_h = 0;
+    ppu_shift_register_attribute_l = 0;
+    ppu_shift_register_attribute_h = 0;
+
+    ppu_8step_pattern_lowplane = 0;
+    ppu_8step_pattern_highplane = 0;
+    ppu_8step_attribute = 0;
+    ppu_8step_nextcharacter = 0;
+    ppu_8step_temp = 0;
+
     if (pattern_tables.window != null) pattern_tables.refreshPatternTables();
     try run();
 }
