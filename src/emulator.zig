@@ -40,8 +40,8 @@ pub var ppu_x_register: u8 = 0;
 var temp_vram_address: u16 = 0;
 var ppu_read_buffer: u8 = 0;
 
-pub var ppu_dot: u32 = 0; // pixel X
-pub var ppu_scanline: u32 = 0; // pixel Y
+pub var ppu_dot: u16 = 0; // pixel X
+pub var ppu_scanline: u16 = 0; // pixel Y
 pub var ppu_vblank: bool = false;
 
 pub var ppu_mask_8pxmaskBG: bool = false;
@@ -49,7 +49,7 @@ pub var ppu_mask_8pxmaskSprites: bool = false;
 pub var ppu_mask_RenderBG: bool = false;
 pub var ppu_mask_RenderSprites: bool = false;
 
-pub var ppu_nametable_select: u9 = 0;
+pub var ppu_nametable_select: u2 = 0;
 pub var ppu_vram_inc_32mode: bool = false;
 pub var ppu_sprite_pattern_table: bool = false;
 pub var ppu_bg_pattern_table: bool = false;
@@ -61,8 +61,8 @@ var ppu_shift_register_pattern_h: u16 = 0;
 var ppu_shift_register_attribute_l: u16 = 0;
 var ppu_shift_register_attribute_h: u16 = 0;
 
-var ppu_8step_pattern_lowplane: u16 = 0;
-var ppu_8step_pattern_highplane: u16 = 0;
+var ppu_8step_pattern_lowplane: u8 = 0;
+var ppu_8step_pattern_highplane: u8 = 0;
 var ppu_8step_attribute: u8 = 0;
 var ppu_8step_nextcharacter: u16 = 0;
 var ppu_8step_temp: u8 = 0;
@@ -105,6 +105,7 @@ pub fn read(address: u16) u8 {
             0x2002 => { // PPUSTATUS (incomplete)
                 var ppu_status: u8 = 0;
                 ppu_status |= if (ppu_vblank) 0x80 else 0;
+                ppu_status |= 0x40;
                 ppu_vblank = false;
                 write_latch = false;
                 return ppu_status;
@@ -159,7 +160,7 @@ fn write(address: u16, value: u8) void {
         ppu_address = address & 0x2007; // ppu ram mirroring
         switch (ppu_address) {
             0x2000 => { // PPUCTRL
-                ppu_nametable_select = value & 3;
+                ppu_nametable_select = @intCast(value & 3);
                 ppu_vram_inc_32mode = (value & 4) != 0;
                 ppu_sprite_pattern_table = (value & 8) != 0;
                 ppu_bg_pattern_table = (value & 0x10) != 0;
@@ -180,7 +181,7 @@ fn write(address: u16, value: u8) void {
                     ppu_x_register = value & 7;
                     temp_vram_address = (temp_vram_address & 0b0111111111100000) | (value >> 3);
                 } else {
-                    transfer_address = (temp_vram_address & 0b00000110000011111) | (((value & 0xF8) << 2) | (@as(u16, value & 7) << 12));
+                    transfer_address = (temp_vram_address & 0b0000110000011111) | (((value & 0xF8) << 2) | (@as(u16, value & 7) << 12));
                 }
                 write_latch = !write_latch;
             },
@@ -1385,7 +1386,7 @@ fn emulatePPU() void {
                 }
 
                 var cycle_tick: u8 = 0;
-                cycle_tick = @truncate((ppu_dot - 1) & 7);
+                cycle_tick = @intCast((ppu_dot - 1) & 7);
                 switch (cycle_tick) {
                     0 => {
                         ppu_shift_register_pattern_l = (ppu_shift_register_pattern_l & 0xFF00) | ppu_8step_pattern_lowplane;
@@ -1405,10 +1406,10 @@ fn emulatePPU() void {
                     3 => {
                         ppu_8step_attribute = ppu_8step_temp;
                         if ((vram_address & 3) >= 2) {
-                            ppu_8step_attribute = @truncate(ppu_8step_attribute >> 2);
+                            ppu_8step_attribute = ppu_8step_attribute >> 2;
                         }
                         if ((((vram_address & 0b0000001111100000) >> 5) & 3) >= 2) {
-                            ppu_8step_attribute = @truncate(ppu_8step_attribute >> 4);
+                            ppu_8step_attribute = ppu_8step_attribute >> 4;
                         }
                         ppu_8step_attribute = ppu_8step_attribute & 3;
                     },
@@ -1451,12 +1452,12 @@ fn emulatePPU() void {
         var palette_high: u8 = 0; // which palette to use
         var palette_low: u8 = 0; // which indexed colour
         if (ppu_mask_RenderBG and (ppu_dot > 8 or ppu_mask_8pxmaskBG)) {
-            const col0 = ((ppu_shift_register_pattern_l >> @intCast(15 - ppu_x_register))) & 1;
-            const col1 = ((ppu_shift_register_pattern_h >> @intCast(15 - ppu_x_register))) & 1;
+            const col0 = (ppu_shift_register_pattern_l >> @intCast(15 - ppu_x_register)) & 1;
+            const col1 = (ppu_shift_register_pattern_h >> @intCast(15 - ppu_x_register)) & 1;
             palette_low = @truncate((col1 << 1) | col0);
 
-            const pal0 = ((ppu_shift_register_attribute_l >> @intCast(15 - ppu_x_register))) & 1;
-            const pal1 = ((ppu_shift_register_attribute_h >> @intCast(15 - ppu_x_register))) & 1;
+            const pal0 = (ppu_shift_register_attribute_l >> @intCast(15 - ppu_x_register)) & 1;
+            const pal1 = (ppu_shift_register_attribute_h >> @intCast(15 - ppu_x_register)) & 1;
             palette_high = @truncate((pal1 << 1) | pal0);
 
             if (palette_low == 0 and palette_high != 0) {
@@ -1490,7 +1491,7 @@ fn ppu_IncrementScrollY() void {
         var y = (vram_address & 0x03E0) >> 5;
         if (y == 29) {
             y = 0;
-            vram_address &= 0x0800;
+            vram_address ^= 0x0800;
         } else {
             y += 1;
             y &= 0x1F;
