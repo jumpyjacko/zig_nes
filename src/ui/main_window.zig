@@ -29,9 +29,7 @@ var emu_thread: ?std.Thread = null;
 var layout: QVBoxLayout = undefined;
 var rom_status_label: QLabel = undefined;
 
-const nametable_width: comptime_int = 32 * 8;
-const nametable_height: comptime_int = 30 * 8;
-var nametable_buffer: [nametable_height][nametable_width][3]u8 = undefined;
+pub var render_buffer: [241][256][3]u8 = undefined;
 var nametable_label: QLabel = undefined;
 
 pub fn initQtApplication(init: std.process.Init) !void {
@@ -153,6 +151,7 @@ fn resetEmulator() callconv(.c) void {
 
     haltEmulator();
 
+    @memset(std.mem.asBytes(&render_buffer), 0);
     emulator.CPU_halted.store(false, .monotonic);
     emu_thread = std.Thread.spawn(.{}, emulator.runEmulatorThread, .{ io, ROM_path }) catch |err| {
         std.log.err("Failed to spawn emulator thread: {any}", .{err});
@@ -167,8 +166,6 @@ fn haltEmulator() void {
         emulator.CPU_halted.store(true, .monotonic);
         thread.join();
         emu_thread = null;
-
-        @memset(std.mem.asBytes(&nametable_buffer), 0);
     }
 }
 
@@ -178,44 +175,8 @@ fn freeROMPath() void {
     }
 }
 
-pub fn displayNametable() void {
-    for (0..30) |row| {
-        for (0..32) |column| {
-            const vram_idx = column + (row * 32);
-            const tile_index = @as(usize, emulator.VRAM[vram_idx]);
-            const chr_base_addr = tile_index * 16;
-
-            const attribute_offset: u8 = @truncate((column >> 2) + (row >> 2) * 8);
-            const attributes: u8 = emulator.VRAM[@as(usize, 0x3C0) + attribute_offset];
-            const quadrant: u8 = @truncate(((column >> 1) & 1) + ((row >> 1) & 1) * 2);
-            const shift_amount: u3 = @intCast(quadrant * 2);
-            const pair: u8 = @truncate((attributes >> shift_amount) & 3);
-
-            for (0..8) |y| {
-                const useSecondPatternTable: u16 = if (emulator.ppu_bg_pattern_table) 4096 else 0;
-                const low: u8 = emulator.CHR_DATA[chr_base_addr + y + useSecondPatternTable];
-                const high: u8 = emulator.CHR_DATA[chr_base_addr + 8 + y + useSecondPatternTable];
-
-                for (0..8) |x| {
-                    var twobit: u8 = if (((low >> @intCast(7 - x)) & 1) == 1) 1 else 0;
-                    twobit += if (((high >> @intCast(7 - x)) & 1) == 1) 2 else 0;
-
-                    var colour: [3]u8 = undefined;
-                    if (twobit == 0) {
-                        colour = emulator.palette[emulator.PALETTE_RAM[0]];
-                    } else {
-                        colour = emulator.palette[emulator.PALETTE_RAM[twobit + pair * 4]];
-                    }
-
-                    const target_y = y + row * 8;
-                    const target_x = x + column * 8;
-                    nametable_buffer[target_y][target_x] = colour;
-                }
-            }
-        }
-    }
-
-    const image = QImage.New4(@ptrCast(&nametable_buffer), @intCast(nametable_width), @intCast(nametable_height), 13); // Format_RGB888
+pub fn render() void {
+    const image = QImage.New4(@ptrCast(&render_buffer), 256, 240, 13); // Format_RGB888
     const pixmap = QPixmap.FromImage(image);
     const scaled_pixmap = pixmap.Scaled4(512, 480, qnamespace_enums.AspectRatioMode.KeepAspectRatio, qnamespace_enums.TransformationMode.FastTransformation);
 

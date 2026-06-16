@@ -64,7 +64,7 @@ var ppu_shift_register_attribute_h: u16 = 0;
 var ppu_8step_pattern_lowplane: u16 = 0;
 var ppu_8step_pattern_highplane: u16 = 0;
 var ppu_8step_attribute: u8 = 0;
-var ppu_8step_nextcharacter: u8 = 0;
+var ppu_8step_nextcharacter: u16 = 0;
 var ppu_8step_temp: u8 = 0;
 
 pub const Colour = [3]u8;
@@ -280,7 +280,8 @@ fn run() !void {
             emulatePPU();
         }
     }
-    main_window.displayNametable();
+
+    main_window.render();
 }
 
 var NMI_level_detector: bool = false;
@@ -1373,7 +1374,7 @@ fn emulatePPU() void {
         ppu_vblank = false;
     }
 
-    if ((ppu_scanline < 240) or ppu_scanline == 261) {
+    if (ppu_scanline < 240 or ppu_scanline == 261) {
         if ((ppu_dot > 0 and ppu_dot <= 256) or (ppu_dot > 320 and ppu_dot <= 336)) {
             if (ppu_mask_RenderBG or ppu_mask_RenderSprites) {
                 if (ppu_mask_RenderBG) {
@@ -1444,6 +1445,31 @@ fn emulatePPU() void {
     }
     if (ppu_dot >= 280 and ppu_dot <= 304 and ppu_scanline == 261) {
         ppu_ResetYScroll();
+    }
+
+    if (ppu_scanline < 241 and ppu_dot > 0 and ppu_dot <= 256) {
+        var palette_high: u8 = 0; // which palette to use
+        var palette_low: u8 = 0; // which indexed colour
+        if (ppu_mask_RenderBG and (ppu_dot > 8 or ppu_mask_8pxmaskBG)) {
+            const col0 = ((ppu_shift_register_pattern_l >> @intCast(15 - ppu_x_register))) & 1;
+            const col1 = ((ppu_shift_register_pattern_h >> @intCast(15 - ppu_x_register))) & 1;
+            palette_low = @truncate((col1 << 1) | col0);
+
+            const pal0 = ((ppu_shift_register_attribute_l >> @intCast(15 - ppu_x_register))) & 1;
+            const pal1 = ((ppu_shift_register_attribute_h >> @intCast(15 - ppu_x_register))) & 1;
+            palette_high = @truncate((pal1 << 1) | pal0);
+
+            if (palette_low == 0 and palette_high != 0) {
+                palette_high = 0;
+            }
+        }
+
+        const dot_palette = PALETTE_RAM[(palette_high << 2) + palette_low] & 0x3F;
+        const colour = palette[dot_palette];
+
+        const target_x = ppu_dot - 1;
+        const target_y = ppu_scanline;
+        main_window.render_buffer[target_y][target_x] = colour;
     }
 
     ppu_dot += 1;
