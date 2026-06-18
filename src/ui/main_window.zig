@@ -31,6 +31,7 @@ var rom_status_label: QLabel = undefined;
 
 pub var render_buffer: [241][256][3]u8 = undefined;
 var nametable_label: QLabel = undefined;
+var image: QImage = undefined;
 
 pub fn initQtApplication(init: std.process.Init) !void {
     const argv = try qt6.init(init.gpa, init.minimal.args);
@@ -101,6 +102,8 @@ pub fn initQtApplication(init: std.process.Init) !void {
     rom_status_label.SetAlignment(qnamespace_enums.AlignmentFlag.AlignVCenter | qnamespace_enums.AlignmentFlag.AlignHCenter);
     rom_status_label.SetWordWrap(true);
     layout.AddWidget(rom_status_label);
+
+    image = QImage.New4(@ptrCast(&render_buffer), 256, 240, 13); // Format_RGB888
 
     window.Show();
 
@@ -176,9 +179,10 @@ fn freeROMPath() void {
 }
 
 pub fn render() void {
-    const image = QImage.New4(@ptrCast(&render_buffer), 256, 240, 13); // Format_RGB888
     const pixmap = QPixmap.FromImage(image);
+    defer pixmap.Delete();
     const scaled_pixmap = pixmap.Scaled4(512, 480, qnamespace_enums.AspectRatioMode.KeepAspectRatio, qnamespace_enums.TransformationMode.FastTransformation);
+    defer scaled_pixmap.Delete();
 
     rom_status_label.SetPixmap(scaled_pixmap);
 }
