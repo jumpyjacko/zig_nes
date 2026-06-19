@@ -36,7 +36,7 @@ pub var total_cycles: usize = 0;
 pub var write_latch: bool = false; // PPU w register
 pub var transfer_address: u16 = 0; // PPU t register
 pub var vram_address: u16 = 0; // PPU v register
-pub var ppu_x_register: u8 = 0;
+pub var ppu_scroll_fine_x: u8 = 0;
 var ppu_read_buffer: u8 = 0;
 var ppu_address_bus: u16 = 0;
 
@@ -181,7 +181,7 @@ fn write(address: u16, value: u8) void {
             0x2004 => {},
             0x2005 => { // PPUSCROLL
                 if (!write_latch) {
-                    ppu_x_register = value & 7;
+                    ppu_scroll_fine_x = value & 7;
                     temp_vram_address = (temp_vram_address & 0b0111111111100000) | (value >> 3);
                 } else {
                     transfer_address = (temp_vram_address & 0b0000110000011111) | (((value & 0xF8) << 2) | (@as(u16, value & 7) << 12));
@@ -1487,12 +1487,12 @@ fn emulatePPU() void {
         var palette_high: u8 = 0; // which palette to use
         var palette_low: u8 = 0; // which indexed colour
         if (ppu_mask_RenderBG and (ppu_dot > 8 or ppu_mask_8pxmaskBG)) {
-            const col0: u8 = @truncate((ppu_shift_register_pattern_l >> @intCast(15 - ppu_x_register)) & 1);
-            const col1: u8 = @truncate((ppu_shift_register_pattern_h >> @intCast(15 - ppu_x_register)) & 1);
+            const col0: u8 = @truncate((ppu_shift_register_pattern_l >> @intCast(15 - ppu_scroll_fine_x)) & 1);
+            const col1: u8 = @truncate((ppu_shift_register_pattern_h >> @intCast(15 - ppu_scroll_fine_x)) & 1);
             palette_low = @truncate((col1 << 1) | col0);
 
-            const pal0: u8 = @truncate((ppu_shift_register_attribute_l >> @intCast(15 - ppu_x_register)) & 1);
-            const pal1: u8 = @truncate((ppu_shift_register_attribute_h >> @intCast(15 - ppu_x_register)) & 1);
+            const pal0: u8 = @truncate((ppu_shift_register_attribute_l >> @intCast(15 - ppu_scroll_fine_x)) & 1);
+            const pal1: u8 = @truncate((ppu_shift_register_attribute_h >> @intCast(15 - ppu_scroll_fine_x)) & 1);
             palette_high = @truncate((pal1 << 1) | pal0);
 
             if (palette_low == 0 and palette_high != 0) {
