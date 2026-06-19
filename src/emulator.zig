@@ -1421,8 +1421,7 @@ fn emulatePPU() void {
                     ppu_shift_register_attribute_h = ppu_shift_register_attribute_h << 1;
                 }
 
-                var cycle_tick: u8 = 0;
-                cycle_tick = @intCast((ppu_dot - 1) & 7);
+                const cycle_tick: u8 = @intCast((ppu_dot - 1) & 7);
                 switch (cycle_tick) {
                     0 => {
                         ppu_shift_register_pattern_l = (ppu_shift_register_pattern_l & 0xFF00) | ppu_8step_pattern_lowplane;
