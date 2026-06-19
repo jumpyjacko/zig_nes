@@ -7,9 +7,9 @@ const pattern_tables = @import("ui/pattern_tables.zig");
 
 // -- CPU --
 pub var PC: u16 = undefined; // program counter
-pub var A: u8 = undefined;
-pub var X: u8 = undefined;
-pub var Y: u8 = undefined;
+pub var A: u8 = 0;
+pub var X: u8 = 0;
+pub var Y: u8 = 0;
 
 pub var SP: u8 = undefined; // stack pointer
 
@@ -252,11 +252,6 @@ pub fn reset(io: std.Io, path: []const u8) !void {
     reader.interface.readSliceAll(&CHR_DATA) catch |err| {
         std.log.warn("No CHR_DATA found on rom, skipping... {}", .{err});
     };
-
-    A = 0;
-    X = 0;
-    Y = 0;
-    SP = 0;
 
     const PC_low = read(0xFFFC);
     const PC_high = read(0xFFFD);
